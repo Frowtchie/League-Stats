@@ -1,0 +1,5 @@
+Champions picked: grep ESPORTSTMNT06 2023.csv | grep WLDs | grep -v ",team,\|ESPORTSTMNT06_2827798\|ESPORTSTMNT06_2828803\|ESPORTSTMNT06_2827812" | awk -F , '{ print $18 }' | sort | uniq -c | sort -nr
+Game duration: grep ESPORTSTMNT06 2023.csv | grep WLDs | grep ",team," | grep -v "ESPORTSTMNT06_2827798\|ESPORTSTMNT06_2828803\|ESPORTSTMNT06_2827812" | awk -F , '{ print $24 }' | uniq | awk '{printf "%d minutes %02d seconds\n", $1 / 60, $1 % 60}'
+Pentakills: grep ESPORTSTMNT06 2023.csv | grep WLDs | grep -v ",team,\|ESPORTSTMNT06_2827798\|ESPORTSTMNT06_2828803\|ESPORTSTMNT06_2827812" | awk -F , '{ print $34 }'
+Same champ, different roles: grep ESPORTSTMNT06 2023.csv | grep WLDs | grep -v ",team,\|ESPORTSTMNT06_2827798\|ESPORTSTMNT06_2828803\|ESPORTSTMNT06_2827812" | awk -F , '{ print $18, $13 }' | sort | uniq
+Bans: grep ESPORTSTMNT06 2023.csv | grep WLDs | grep -v ",team,\|ESPORTSTMNT06_2827798\|ESPORTSTMNT06_2828803\|ESPORTSTMNT06_2827812" | awk -F , '{ print $19,$20,$21,$22,$23 }' | uniq
