@@ -104,7 +104,7 @@ def print_next_steps():
     print("3. Load the configuration:")
     print("   source config.env")
     print("4. Fetch some match data:")
-    print("   python league.py Frowtch 5")
+    print("   python league.py frowtch blue 5")
     print("5. Analyze the data:")
     print("   python analyze.py --player Frowtch")
     print("6. Create visualizations:")

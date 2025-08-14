@@ -70,12 +70,18 @@ source config.env
 ### Fetch Match Data
 
 ```bash
-# Fetch last 10 matches for a player
-python league.py Frowtch 10
+# Fetch last 10 matches for a player by their Riot ID (game name + tag)
+python league.py frowtch blue 10
 
-# With debug logging
-python league.py Frowtch 5 --log-level DEBUG
+# Examples with different players
+python league.py Faker T1 5
+python league.py Hide on bush KR1 15
+
+# With debug logging and no cache
+python league.py frowtch blue 5 --log-level DEBUG --no-cache
 ```
+
+**Note**: The script now uses Riot ID (game name + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance.
 
 ### Generate Personal Performance Visualizations
 
@@ -119,77 +125,55 @@ python analyze.py --player Frowtch --matches-dir custom_matches/
 ### Environment Variables
 
 - `RIOT_API_TOKEN` (required): Your Riot Games API token
-- `PUUID_FROWTCH` (optional): PUUID for Frowtch player
-- `PUUID_OVEROWSER` (optional): PUUID for Overowser player  
-- `PUUID_SURO` (optional): PUUID for Suro player
 
-### Adding New Players
+**Note**: With the new Riot ID-based player lookup, you no longer need to configure individual player PUUIDs. The script will automatically fetch PUUIDs using the Riot API when you provide a game name and tag line.
 
-To add a new player, set their PUUID as an environment variable:
+### Regional Endpoints
+
+The script uses the Americas endpoint (`americas.api.riotgames.com`) for account data by default, which covers:
+- North America (NA)
+- Brazil (BR) 
+- Latin America North (LAN)
+- Latin America South (LAS)
+- Oceania (OCE)
+
+For players in other regions, the script will still work as account data is accessible across regional boundaries.
+
+### Getting Your Riot API Token
+
+1. Go to the [Riot Developer Portal](https://developer.riotgames.com/)
+2. Sign in with your Riot account
+3. Create a new application or use an existing one
+4. Copy your API key
+5. Set it as an environment variable:
+
 ```bash
-export PUUID_NEWPLAYER="their_puuid_here"
+export RIOT_API_TOKEN="your_api_key_here"
 ```
 
-### Finding Player PUUIDs
+### Finding Player Information
 
-You can find PUUIDs using the Riot API account-v1 endpoint. Here's how:
+To use this tool, you only need a player's **Riot ID**, which consists of:
+- **Game Name**: The display name (e.g., "Faker", "Hide on bush")  
+- **Tag Line**: The identifier after the # symbol (e.g., "T1", "KR1")
 
-#### Method 1: Using the Riot API directly
+You can find this information:
+1. **In-game**: Look at the player's profile or match history
+2. **League client**: Check recent games or friend lists
+3. **Third-party sites**: Use sites like OP.GG, U.GG, or similar (search for the player and note their Riot ID)
+4. **Ask the player**: The Riot ID is their current display name + tag
 
-**Prerequisites:**
-- Riot API key (get one from [Riot Developer Portal](https://developer.riotgames.com/))
-- Player's game name and tag line (e.g., "Faker#T1")
+**Examples of valid Riot IDs:**
+- `Faker#T1`
+- `Hide on bush#KR1` 
+- `Doublelift#NA1`
+- `frowtch#blue`
 
-**API Endpoint:**
-```
-GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}
-```
+The script will automatically fetch the player's PUUID using their Riot ID, so you don't need to manually look up PUUIDs anymore.
 
-**Example using curl:**
-```bash
-# Replace YOUR_API_KEY with your actual API key
-# Replace Faker and T1 with the player's game name and tag line
-curl -X GET "https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/Faker/T1" \
-     -H "X-Riot-Token: YOUR_API_KEY"
-```
+### Legacy PUUID Configuration (Optional)
 
-**Example using Python:**
-```python
-import requests
-
-api_key = "YOUR_API_KEY"
-game_name = "Faker"
-tag_line = "T1"
-
-url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
-headers = {"X-Riot-Token": api_key}
-
-response = requests.get(url, headers=headers)
-if response.status_code == 200:
-    data = response.json()
-    puuid = data["puuid"]
-    print(f"PUUID for {game_name}#{tag_line}: {puuid}")
-else:
-    print(f"Error: {response.status_code}")
-```
-
-**Response format:**
-```json
-{
-  "puuid": "abc123def456...",
-  "gameName": "Faker",
-  "tagLine": "T1"
-}
-```
-
-#### Method 2: Using online tools
-
-You can also use online PUUID lookup tools, but make sure they're from trusted sources as they require your API key or player information.
-
-**Important Notes:**
-- Use the appropriate regional endpoint (`americas.api.riotgames.com`, `europe.api.riotgames.com`, or `asia.api.riotgames.com`)
-- Rate limits apply (100 requests per 2 minutes for personal API keys)
-- The PUUID is the `puuid` field in the response
+The old PUUID-based configuration is still supported for backwards compatibility, but it's no longer recommended. If you have environment variables like `PUUID_FROWTCH` set, the `load_player_config()` function will still work, but the main script now uses the new Riot ID approach.
 
 ## Project Structure
 
