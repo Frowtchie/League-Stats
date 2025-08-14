@@ -1,0 +1,360 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Personal performance visualization module for League of Legends match data.
+Creates charts and graphs for individual player analysis.
+"""
+
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+from collections import Counter
+import datetime
+import argparse
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent.parent))
+import league
+import analyze
+
+
+def load_player_match_data(player_puuid: str, matches_dir: str = "matches") -> List[Dict]:
+    """
+    Load match data for a specific player.
+    
+    Args:
+        player_puuid (str): PUUID of the player
+        matches_dir (str): Directory containing match JSON files
+        
+    Returns:
+        List[Dict]: List of match data for the player
+    """
+    matches = analyze.load_match_files(matches_dir)
+    player_matches = []
+    
+    for match in matches:
+        if 'info' not in match or 'participants' not in match['info']:
+            continue
+            
+        # Check if player participated in this match
+        for participant in match['info']['participants']:
+            if participant.get('puuid') == player_puuid:
+                player_matches.append(match)
+                break
+                
+    return player_matches
+
+
+def plot_performance_trends(player_puuid: str, player_name: str, matches_dir: str = "matches"):
+    """
+    Plot KDA and win rate trends over time for a player.
+    """
+    matches = load_player_match_data(player_puuid, matches_dir)
+    
+    if not matches:
+        print(f"No matches found for {player_name}")
+        return
+        
+    # Sort matches by game creation time
+    matches.sort(key=lambda x: x['info'].get('gameCreation', 0))
+    
+    game_numbers = []
+    kdas = []
+    win_rates = []
+    wins = 0
+    
+    for i, match in enumerate(matches):
+        # Find player data in this match
+        player_data = None
+        for participant in match['info']['participants']:
+            if participant.get('puuid') == player_puuid:
+                player_data = participant
+                break
+                
+        if not player_data:
+            continue
+            
+        game_numbers.append(i + 1)
+        
+        # Calculate KDA for this game
+        kills = player_data.get('kills', 0)
+        deaths = player_data.get('deaths', 0)
+        assists = player_data.get('assists', 0)
+        kda = (kills + assists) / max(deaths, 1)
+        kdas.append(kda)
+        
+        # Track win rate
+        if player_data.get('win', False):
+            wins += 1
+        win_rate = wins / (i + 1)
+        win_rates.append(win_rate * 100)  # Convert to percentage
+    
+    # Create subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+    
+    # Plot KDA trend
+    ax1.plot(game_numbers, kdas, 'b-', marker='o', markersize=4, alpha=0.7)
+    ax1.axhline(y=np.mean(kdas), color='r', linestyle='--', alpha=0.7, label=f'Average KDA: {np.mean(kdas):.2f}')
+    ax1.set_xlabel('Game Number')
+    ax1.set_ylabel('KDA Ratio')
+    ax1.set_title(f'{player_name} - KDA Trend Over Time')
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
+    
+    # Plot win rate trend
+    ax2.plot(game_numbers, win_rates, 'g-', marker='s', markersize=4, alpha=0.7)
+    ax2.axhline(y=50, color='gray', linestyle=':', alpha=0.5, label='50% Win Rate')
+    ax2.set_xlabel('Game Number')
+    ax2.set_ylabel('Win Rate (%)')
+    ax2.set_title(f'{player_name} - Win Rate Trend Over Time')
+    ax2.grid(True, alpha=0.3)
+    ax2.legend()
+    ax2.set_ylim(0, 100)
+    
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_champion_performance(player_puuid: str, player_name: str, matches_dir: str = "matches"):
+    """
+    Plot performance statistics by champion.
+    """
+    matches = load_player_match_data(player_puuid, matches_dir)
+    
+    if not matches:
+        print(f"No matches found for {player_name}")
+        return
+        
+    champion_stats = {}
+    
+    for match in matches:
+        # Find player data in this match
+        player_data = None
+        for participant in match['info']['participants']:
+            if participant.get('puuid') == player_puuid:
+                player_data = participant
+                break
+                
+        if not player_data:
+            continue
+            
+        champion = player_data.get('championName', 'Unknown')
+        
+        if champion not in champion_stats:
+            champion_stats[champion] = {
+                'games': 0,
+                'wins': 0,
+                'total_kda': 0,
+                'total_damage': 0,
+                'total_gold': 0
+            }
+        
+        stats = champion_stats[champion]
+        stats['games'] += 1
+        
+        if player_data.get('win', False):
+            stats['wins'] += 1
+            
+        kills = player_data.get('kills', 0)
+        deaths = player_data.get('deaths', 0)
+        assists = player_data.get('assists', 0)
+        kda = (kills + assists) / max(deaths, 1)
+        
+        stats['total_kda'] += kda
+        stats['total_damage'] += player_data.get('totalDamageDealtToChampions', 0)
+        stats['total_gold'] += player_data.get('goldEarned', 0)
+    
+    # Filter champions with at least 2 games and get top 8
+    filtered_champions = {champ: stats for champ, stats in champion_stats.items() 
+                         if stats['games'] >= 2}
+    
+    if not filtered_champions:
+        print(f"No champions with enough games for {player_name}")
+        return
+        
+    # Sort by games played and take top 8
+    top_champions = dict(sorted(filtered_champions.items(), 
+                               key=lambda x: x[1]['games'], reverse=True)[:8])
+    
+    champions = list(top_champions.keys())
+    win_rates = [stats['wins'] / stats['games'] * 100 for stats in top_champions.values()]
+    avg_kdas = [stats['total_kda'] / stats['games'] for stats in top_champions.values()]
+    games_played = [stats['games'] for stats in top_champions.values()]
+    
+    # Create subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
+    
+    # Plot win rates
+    bars1 = ax1.bar(champions, win_rates, color='skyblue', alpha=0.7)
+    ax1.axhline(y=50, color='red', linestyle='--', alpha=0.7, label='50% Win Rate')
+    ax1.set_ylabel('Win Rate (%)')
+    ax1.set_title(f'{player_name} - Win Rate by Champion')
+    ax1.legend()
+    ax1.set_ylim(0, 100)
+    
+    # Add game count labels on bars
+    for bar, games in zip(bars1, games_played):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{games} games', ha='center', va='bottom', fontsize=9)
+    
+    # Plot average KDA
+    bars2 = ax2.bar(champions, avg_kdas, color='lightcoral', alpha=0.7)
+    ax2.set_ylabel('Average KDA')
+    ax2.set_title(f'{player_name} - Average KDA by Champion')
+    ax2.set_xlabel('Champion')
+    
+    # Rotate x-axis labels for better readability
+    for ax in [ax1, ax2]:
+        ax.tick_params(axis='x', rotation=45)
+    
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_role_performance(player_puuid: str, player_name: str, matches_dir: str = "matches"):
+    """
+    Plot performance statistics by role/position.
+    """
+    matches = load_player_match_data(player_puuid, matches_dir)
+    
+    if not matches:
+        print(f"No matches found for {player_name}")
+        return
+        
+    role_stats = {}
+    
+    for match in matches:
+        # Find player data in this match
+        player_data = None
+        for participant in match['info']['participants']:
+            if participant.get('puuid') == player_puuid:
+                player_data = participant
+                break
+                
+        if not player_data:
+            continue
+            
+        role = player_data.get('teamPosition', 'Unknown')
+        if role == '':
+            role = 'Unknown'
+            
+        if role not in role_stats:
+            role_stats[role] = {
+                'games': 0,
+                'wins': 0,
+                'total_kda': 0,
+                'total_damage': 0,
+                'total_gold': 0
+            }
+        
+        stats = role_stats[role]
+        stats['games'] += 1
+        
+        if player_data.get('win', False):
+            stats['wins'] += 1
+            
+        kills = player_data.get('kills', 0)
+        deaths = player_data.get('deaths', 0)
+        assists = player_data.get('assists', 0)
+        kda = (kills + assists) / max(deaths, 1)
+        
+        stats['total_kda'] += kda
+        stats['total_damage'] += player_data.get('totalDamageDealtToChampions', 0)
+        stats['total_gold'] += player_data.get('goldEarned', 0)
+    
+    # Filter roles with at least 1 game
+    filtered_roles = {role: stats for role, stats in role_stats.items() 
+                     if stats['games'] >= 1}
+    
+    if not filtered_roles:
+        print(f"No role data found for {player_name}")
+        return
+        
+    roles = list(filtered_roles.keys())
+    win_rates = [stats['wins'] / stats['games'] * 100 for stats in filtered_roles.values()]
+    avg_kdas = [stats['total_kda'] / stats['games'] for stats in filtered_roles.values()]
+    games_played = [stats['games'] for stats in filtered_roles.values()]
+    
+    # Create pie chart for games distribution and bar chart for performance
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+    
+    # Games distribution pie chart
+    ax1.pie(games_played, labels=roles, autopct='%1.1f%%', startangle=90)
+    ax1.set_title(f'{player_name} - Games by Role')
+    
+    # Win rate by role
+    bars2 = ax2.bar(roles, win_rates, color='lightgreen', alpha=0.7)
+    ax2.axhline(y=50, color='red', linestyle='--', alpha=0.7, label='50% Win Rate')
+    ax2.set_ylabel('Win Rate (%)')
+    ax2.set_title('Win Rate by Role')
+    ax2.legend()
+    ax2.set_ylim(0, 100)
+    
+    # Add game count labels
+    for bar, games in zip(bars2, games_played):
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{games}g', ha='center', va='bottom', fontsize=9)
+    
+    # Average KDA by role
+    ax3.bar(roles, avg_kdas, color='orange', alpha=0.7)
+    ax3.set_ylabel('Average KDA')
+    ax3.set_title('Average KDA by Role')
+    ax3.set_xlabel('Role')
+    
+    # Average damage by role
+    avg_damages = [stats['total_damage'] / stats['games'] for stats in filtered_roles.values()]
+    ax4.bar(roles, avg_damages, color='purple', alpha=0.7)
+    ax4.set_ylabel('Average Damage to Champions')
+    ax4.set_title('Average Damage by Role')
+    ax4.set_xlabel('Role')
+    
+    # Format damage values
+    ax4.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x/1000:.0f}K'))
+    
+    plt.tight_layout()
+    plt.show()
+
+
+def main():
+    """Main function for personal performance visualization."""
+    parser = argparse.ArgumentParser(description="Generate personal performance visualizations")
+    parser.add_argument("player", type=str, help="Player name to analyze (must exist in config)")
+    parser.add_argument("--matches-dir", type=str, default="matches", 
+                       help="Directory containing match JSON files")
+    parser.add_argument("--chart", type=str, choices=["trends", "champions", "roles", "all"],
+                       default="all", help="Type of chart to generate")
+    
+    args = parser.parse_args()
+    
+    # Load player config to get PUUID
+    puuids = league.load_player_config()
+    if args.player not in puuids:
+        available_players = ", ".join(puuids.keys())
+        print(f"Player '{args.player}' not found. Available: {available_players}")
+        return
+        
+    player_puuid = puuids[args.player]
+    
+    # Generate requested charts
+    if args.chart == "trends" or args.chart == "all":
+        print(f"Generating performance trends for {args.player}...")
+        plot_performance_trends(player_puuid, args.player, args.matches_dir)
+    
+    if args.chart == "champions" or args.chart == "all":
+        print(f"Generating champion performance for {args.player}...")
+        plot_champion_performance(player_puuid, args.player, args.matches_dir)
+        
+    if args.chart == "roles" or args.chart == "all":
+        print(f"Generating role performance for {args.player}...")
+        plot_role_performance(player_puuid, args.player, args.matches_dir)
+
+
+if __name__ == "__main__":
+    main()

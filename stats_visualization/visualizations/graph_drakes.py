@@ -1,42 +1,208 @@
-import csv
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Personal drake statistics visualization for League of Legends match data.
+Analyzes dragon control from personal match history.
+"""
+
+import json
 import matplotlib.pyplot as plt
+import numpy as np
+from pathlib import Path
+from typing import Dict, List, Any
+import argparse
+import sys
 
-def read_drake_data(file_path):
-    team_elders, team_elemental_drakes = {}, {}
-    with open(file_path, "r") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            team = row["teamname"]
-            try:
-                elders = int(row["elders"])
-                elemental_drakes = int(row["elementaldrakes"])
-            except ValueError:
-                continue
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent.parent))
+import league
+import analyze
 
-            team_elders[team] = team_elders.get(team, 0) + elders
-            team_elemental_drakes[team] = team_elemental_drakes.get(team, 0) + elemental_drakes
-    return team_elders, team_elemental_drakes
 
-def plot_drakes(team_elders, team_elemental_drakes):
-    teams = list(team_elders.keys())
-    elder_counts = [team_elders[team] for team in teams]
-    elemental_counts = [team_elemental_drakes[team] for team in teams]
+def extract_drake_data(player_puuid: str, matches_dir: str = "matches") -> Dict[str, Any]:
+    """
+    Extract drake-related data for a specific player from match history.
+    
+    Args:
+        player_puuid (str): PUUID of the player
+        matches_dir (str): Directory containing match JSON files
+        
+    Returns:
+        Dict containing drake statistics
+    """
+    matches = analyze.load_match_files(matches_dir)
+    drake_data = {
+        'player_team_drakes': [],
+        'enemy_team_drakes': [],
+        'wins': [],
+        'game_durations': [],
+        'total_games': 0
+    }
+    
+    for match in matches:
+        if 'info' not in match or 'participants' not in match['info']:
+            continue
+            
+        # Find player's team ID
+        player_team_id = None
+        player_won = False
+        
+        for participant in match['info']['participants']:
+            if participant.get('puuid') == player_puuid:
+                player_team_id = participant.get('teamId')
+                player_won = participant.get('win', False)
+                break
+                
+        if player_team_id is None:
+            continue
+            
+        drake_data['total_games'] += 1
+        game_duration = match['info'].get('gameDuration', 0)
+        drake_data['game_durations'].append(game_duration / 60)  # Convert to minutes
+        drake_data['wins'].append(player_won)
+        
+        # Extract team drake counts
+        if 'teams' in match['info']:
+            player_drakes = 0
+            enemy_drakes = 0
+            
+            for team in match['info']['teams']:
+                dragon_kills = team.get('objectives', {}).get('dragon', {}).get('kills', 0)
+                if team['teamId'] == player_team_id:
+                    player_drakes = dragon_kills
+                else:
+                    enemy_drakes = dragon_kills
+            
+            drake_data['player_team_drakes'].append(player_drakes)
+            drake_data['enemy_team_drakes'].append(enemy_drakes)
+    
+    return drake_data
 
-    x = range(len(teams))
-    plt.bar(x, elder_counts, width=0.4, label="Elder Drakes", align="center")
-    plt.bar(x, elemental_counts, width=0.4, label="Elemental Drakes", align="edge")
-    plt.xticks(x, teams, rotation=45)
-    plt.xlabel("Teams")
-    plt.ylabel("Drakes")
-    plt.title("Drakes by Team")
-    plt.legend()
+
+def plot_drake_analysis(player_name: str, drake_data: Dict[str, Any]):
+    """
+    Create comprehensive drake analysis visualization.
+    """
+    if drake_data['total_games'] == 0:
+        print(f"No games found for {player_name}")
+        return
+    
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+    
+    # Drake control comparison
+    avg_player_drakes = np.mean(drake_data['player_team_drakes'])
+    avg_enemy_drakes = np.mean(drake_data['enemy_team_drakes'])
+    
+    teams = ['Player Team', 'Enemy Team']
+    avg_drakes = [avg_player_drakes, avg_enemy_drakes]
+    colors = ['lightblue', 'lightcoral']
+    
+    bars1 = ax1.bar(teams, avg_drakes, color=colors, alpha=0.7)
+    ax1.set_ylabel('Average Dragons per Game')
+    ax1.set_title(f'{player_name} - Dragon Control Comparison')
+    
+    # Add value labels
+    for bar, value in zip(bars1, avg_drakes):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.05,
+                f'{value:.1f}', ha='center', va='bottom')
+    
+    # Drake control distribution
+    drake_diff = [p - e for p, e in zip(drake_data['player_team_drakes'], drake_data['enemy_team_drakes'])]
+    ax2.hist(drake_diff, bins=range(-6, 7), alpha=0.7, color='purple', edgecolor='black')
+    ax2.axvline(0, color='red', linestyle='--', label='Even Drake Control')
+    ax2.set_xlabel('Drake Advantage (Player Team - Enemy Team)')
+    ax2.set_ylabel('Number of Games')
+    ax2.set_title(f'{player_name} - Drake Control Distribution')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    # Win rate by drake control
+    win_rates = {'Behind': [], 'Even': [], 'Ahead': []}
+    for p_drakes, e_drakes, win in zip(drake_data['player_team_drakes'], 
+                                      drake_data['enemy_team_drakes'], 
+                                      drake_data['wins']):
+        if p_drakes < e_drakes:
+            win_rates['Behind'].append(win)
+        elif p_drakes == e_drakes:
+            win_rates['Even'].append(win)
+        else:
+            win_rates['Ahead'].append(win)
+    
+    categories = []
+    wr_values = []
+    colors = []
+    
+    for category, wins in win_rates.items():
+        if wins:
+            categories.append(f'{category}\n({len(wins)} games)')
+            wr_values.append(sum(wins) / len(wins) * 100)
+            if category == 'Behind':
+                colors.append('red')
+            elif category == 'Even':
+                colors.append('yellow')
+            else:
+                colors.append('green')
+    
+    if categories:
+        bars3 = ax3.bar(categories, wr_values, color=colors, alpha=0.7)
+        ax3.set_ylabel('Win Rate (%)')
+        ax3.set_title(f'{player_name} - Win Rate by Drake Control')
+        ax3.set_ylim(0, 100)
+        
+        # Add percentage labels
+        for bar, wr in zip(bars3, wr_values):
+            height = bar.get_height()
+            ax3.text(bar.get_x() + bar.get_width()/2., height + 1,
+                    f'{wr:.1f}%', ha='center', va='bottom')
+    
+    # Drake control over time
+    game_numbers = range(1, len(drake_data['player_team_drakes']) + 1)
+    ax4.plot(game_numbers, drake_data['player_team_drakes'], 'o-', 
+             label='Player Team', color='blue', alpha=0.7)
+    ax4.plot(game_numbers, drake_data['enemy_team_drakes'], 's-', 
+             label='Enemy Team', color='red', alpha=0.7)
+    
+    ax4.set_xlabel('Game Number')
+    ax4.set_ylabel('Dragons Taken')
+    ax4.set_title(f'{player_name} - Drake Control Over Time')
+    ax4.legend()
+    ax4.grid(True, alpha=0.3)
+    
     plt.tight_layout()
     plt.show()
 
+
 def main():
-    file_path = "LEC.csv"
-    team_elders, team_elemental_drakes = read_drake_data(file_path)
-    plot_drakes(team_elders, team_elemental_drakes)
+    """Main function for drake analysis visualization."""
+    parser = argparse.ArgumentParser(description="Generate personal drake statistics visualization")
+    parser.add_argument("player", type=str, help="Player name to analyze (must exist in config)")
+    parser.add_argument("--matches-dir", type=str, default="matches", 
+                       help="Directory containing match JSON files")
+    
+    args = parser.parse_args()
+    
+    # Load player config to get PUUID
+    puuids = league.load_player_config()
+    if args.player not in puuids:
+        available_players = ", ".join(puuids.keys())
+        print(f"Player '{args.player}' not found. Available: {available_players}")
+        return
+        
+    player_puuid = puuids[args.player]
+    
+    # Extract drake data
+    print(f"Analyzing drake data for {args.player}...")
+    drake_data = extract_drake_data(player_puuid, args.matches_dir)
+    
+    if drake_data['total_games'] == 0:
+        print(f"No matches found for {args.player}")
+        return
+    
+    # Generate visualization
+    plot_drake_analysis(args.player, drake_data)
+
 
 if __name__ == "__main__":
     main()
