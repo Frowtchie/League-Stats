@@ -1,6 +1,11 @@
 import unittest
+import sys
+import os
 from unittest.mock import patch, mock_open
-from league_stats_2023.graph_kills import read_csv_data, plot_kills  # Updated import
+
+# Add the stats_visualization directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'stats_visualization', 'visualizations'))
+from graph_kills import read_csv_data, plot_kills
 
 class TestGraphKills(unittest.TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data="teamname,position,kills,deaths,date\nTeamA,team,10,5,2023-01-01 12:00:00\n")

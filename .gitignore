@@ -30,6 +30,9 @@ venv/
 *.log
 *.tmp
 
+# Configuration files with secrets
+config.env
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
