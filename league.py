@@ -39,6 +39,44 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30):
+    """
+    Make a request to the API with proper error handling.
+    
+    Args:
+        url (str): The URL to request
+        headers (Dict[str, str]): Request headers
+        timeout (int): Request timeout in seconds
+        
+    Returns:
+        requests.Response: The response object
+        
+    Raises:
+        requests.RequestException: If the request fails
+    """
+    response = requests.get(url, headers=headers, timeout=timeout)
+    response.raise_for_status()
+    return response
+
+
+def validate_match_data(data: Dict) -> bool:
+    """
+    Validate that match data has the expected structure.
+    
+    Args:
+        data (Dict): The match data to validate
+        
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    if not isinstance(data, dict):
+        return False
+    
+    # Check for required fields
+    required_fields = ['info', 'metadata']
+    return all(field in data for field in required_fields)
+
+
 def load_player_config() -> Dict[str, str]:
     """
     Load player PUUIDs from environment variables or config file.
@@ -67,6 +105,57 @@ def load_player_config() -> Dict[str, str]:
         }
     
     return puuids
+
+
+def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
+    """
+    Fetch PUUID for a player using their Riot ID (game name + tag line).
+    
+    Args:
+        game_name (str): The player's game name (e.g., "Frowtch")
+        tag_line (str): The player's tag line (e.g., "blue")
+        token (str): The API token for authentication
+        
+    Returns:
+        str: The player's PUUID
+        
+    Raises:
+        requests.RequestException: If the API request fails
+        ValueError: If the player is not found or response is invalid
+    """
+    # Use the Americas endpoint for account data (covers NA, BR, LAN, LAS, OCE)
+    # For other regions, you might need to use different endpoints:
+    # - asia.api.riotgames.com (for KR, JP, etc.)
+    # - europe.api.riotgames.com (for EUW, EUNE, TR, RU)
+    base_url = "https://americas.api.riotgames.com"
+    url = f"{base_url}/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+    headers = {"X-Riot-Token": token}
+    
+    try:
+        logger.info(f"Fetching PUUID for {game_name}#{tag_line}")
+        response = make_api_request(url, headers)
+        data = response.json()
+        
+        # Validate response
+        if not isinstance(data, dict) or 'puuid' not in data:
+            raise ValueError("Invalid response format - missing PUUID")
+            
+        puuid = data['puuid']
+        logger.info(f"Successfully retrieved PUUID for {game_name}#{tag_line}")
+        return puuid
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            raise ValueError(f"Player '{game_name}#{tag_line}' not found")
+        else:
+            logger.error(f"HTTP error fetching PUUID: {e}")
+            raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to fetch PUUID for {game_name}#{tag_line}: {e}")
+        raise
+    except ValueError as e:
+        logger.error(f"Failed to parse PUUID response: {e}")
+        raise
 
 
 def fetch_match_data(match_id: str, token: str) -> Dict:
@@ -240,8 +329,9 @@ def main():
     """
     Main function to fetch and save match data.
     """
-    parser = argparse.ArgumentParser(description="Fetch match data for a player.")
-    parser.add_argument("player", type=str, help="The player's name (e.g., Frowtch).")
+    parser = argparse.ArgumentParser(description="Fetch match data for a player by Riot ID.")
+    parser.add_argument("game_name", type=str, help="The player's game name (e.g., Frowtch).")
+    parser.add_argument("tag_line", type=str, help="The player's tag line (e.g., blue).")
     parser.add_argument("count", type=int, help="The number of matches to fetch.")
     parser.add_argument("--log-level", type=str, default="INFO", 
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -259,107 +349,18 @@ def main():
         logger.error("RIOT_API_TOKEN environment variable is not set.")
         raise EnvironmentError("RIOT_API_TOKEN environment variable is not set.")
 
-    # Load player configuration
-    puuids = load_player_config()
-    
-    player = args.player
+    # Fetch PUUID dynamically using Riot ID
+    game_name = args.game_name
+    tag_line = args.tag_line
     count = args.count
-
-    if player not in puuids:
-        available_players = ", ".join(puuids.keys())
-        logger.error(f"Player '{player}' not found. Available players: {available_players}")
-        raise ValueError(f"Player '{player}' not found in PUUIDS. Available: {available_players}")
-
-    puuid = puuids[player]
     use_cache = not args.no_cache
-    
-    logger.info(f"Starting fetch for player {player} - {count} matches (cache: {'enabled' if use_cache else 'disabled'})")
-    
+
     try:
+        puuid = fetch_puuid_by_riot_id(game_name, tag_line, token)
+        logger.info(f"Starting fetch for player {game_name}#{tag_line} - {count} matches (cache: {'enabled' if use_cache else 'disabled'})")
+        
         match_ids = fetch_match_history(puuid, count, token)
         process_matches(match_ids, token, use_cache)
-        logger.info("Process completed successfully")
-    except Exception as e:
-        logger.error(f"Process failed: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    main()
-
-
-def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
-    """
-    Fetches the match history for a player using requests library.
-
-    Args:
-        puuid (str): The player's PUUID.
-        count (int): The number of matches to fetch.
-        token (str): The API token for authentication.
-
-    Returns:
-        List[str]: A list of match IDs.
-
-    Raises:
-        requests.RequestException: If the API request fails.
-        ValueError: If the response cannot be parsed as JSON.
-    """
-    headers = {"X-Riot-Token": token}
-    url = f"{MATCH_HISTORY_URL}{puuid}/ids?start=0&count={count}"
-    
-    try:
-        logger.info(f"Fetching match history for PUUID {puuid[:10]}... (count: {count})")
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        match_ids = response.json()
-        logger.info(f"Retrieved {len(match_ids)} match IDs")
-        return match_ids
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to fetch match history: {e}")
-        raise
-    except ValueError as e:
-        logger.error(f"Failed to parse JSON response for match history: {e}")
-        raise
-
-
-def main():
-    """
-    Main function to fetch and save match data.
-    """
-    parser = argparse.ArgumentParser(description="Fetch match data for a player.")
-    parser.add_argument("player", type=str, help="The player's name (e.g., Frowtch).")
-    parser.add_argument("count", type=int, help="The number of matches to fetch.")
-    parser.add_argument("--log-level", type=str, default="INFO", 
-                       choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-                       help="Set the logging level")
-    args = parser.parse_args()
-
-    # Set logging level
-    logger.setLevel(getattr(logging, args.log_level))
-
-    # Get API token
-    token = os.getenv("RIOT_API_TOKEN")
-    if not token:
-        logger.error("RIOT_API_TOKEN environment variable is not set.")
-        raise EnvironmentError("RIOT_API_TOKEN environment variable is not set.")
-
-    # Load player configuration
-    puuids = load_player_config()
-    
-    player = args.player
-    count = args.count
-
-    if player not in puuids:
-        available_players = ", ".join(puuids.keys())
-        logger.error(f"Player '{player}' not found. Available players: {available_players}")
-        raise ValueError(f"Player '{player}' not found in PUUIDS. Available: {available_players}")
-
-    puuid = puuids[player]
-    logger.info(f"Starting fetch for player {player} - {count} matches")
-    
-    try:
-        match_ids = fetch_match_history(puuid, count, token)
-        process_matches(match_ids, token)
         logger.info("Process completed successfully")
     except Exception as e:
         logger.error(f"Process failed: {e}")

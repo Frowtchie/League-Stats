@@ -87,6 +87,71 @@ class TestLeagueModule(unittest.TestCase):
         
         self.assertEqual(mock_fetch.call_count, 2)
         self.assertEqual(mock_save.call_count, 2)
+    
+    @patch('league.make_api_request')
+    def test_fetch_puuid_by_riot_id_success(self, mock_make_request):
+        """Test successful PUUID fetch by Riot ID"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            'puuid': 'test_puuid_123',
+            'gameName': 'TestPlayer',
+            'tagLine': 'test'
+        }
+        mock_make_request.return_value = mock_response
+        
+        result = league.fetch_puuid_by_riot_id('TestPlayer', 'test', 'test_token')
+        
+        self.assertEqual(result, 'test_puuid_123')
+        mock_make_request.assert_called_once()
+        args, kwargs = mock_make_request.call_args
+        self.assertIn('TestPlayer', args[0])
+        self.assertIn('test', args[0])
+    
+    @patch('league.make_api_request')
+    def test_fetch_puuid_by_riot_id_not_found(self, mock_make_request):
+        """Test PUUID fetch when player not found"""
+        mock_error = league.requests.exceptions.HTTPError()
+        mock_error.response = Mock()
+        mock_error.response.status_code = 404
+        mock_make_request.side_effect = mock_error
+        
+        with self.assertRaises(ValueError) as context:
+            league.fetch_puuid_by_riot_id('NonExistent', 'test', 'test_token')
+        
+        self.assertIn('not found', str(context.exception))
+    
+    @patch('league.make_api_request')
+    def test_fetch_puuid_by_riot_id_invalid_response(self, mock_make_request):
+        """Test PUUID fetch with invalid response format"""
+        mock_response = Mock()
+        mock_response.json.return_value = {'invalid': 'response'}
+        mock_make_request.return_value = mock_response
+        
+        with self.assertRaises(ValueError) as context:
+            league.fetch_puuid_by_riot_id('TestPlayer', 'test', 'test_token')
+        
+        self.assertIn('missing PUUID', str(context.exception))
+    
+    def test_validate_match_data_valid(self):
+        """Test match data validation with valid data"""
+        valid_data = {
+            'info': {'gameId': 12345},
+            'metadata': {'matchId': 'test'}
+        }
+        
+        result = league.validate_match_data(valid_data)
+        self.assertTrue(result)
+    
+    def test_validate_match_data_invalid(self):
+        """Test match data validation with invalid data"""
+        invalid_data = {'only': 'partial_data'}
+        
+        result = league.validate_match_data(invalid_data)
+        self.assertFalse(result)
+        
+        # Test with non-dict data
+        result = league.validate_match_data("not a dict")
+        self.assertFalse(result)
 
 
 if __name__ == '__main__':
