@@ -116,7 +116,66 @@ To add a new player, set their PUUID as an environment variable:
 export PUUID_NEWPLAYER="their_puuid_here"
 ```
 
-You can find PUUIDs using the Riot API account-v1 endpoint.
+### Finding Player PUUIDs
+
+You can find PUUIDs using the Riot API account-v1 endpoint. Here's how:
+
+#### Method 1: Using the Riot API directly
+
+**Prerequisites:**
+- Riot API key (get one from [Riot Developer Portal](https://developer.riotgames.com/))
+- Player's game name and tag line (e.g., "Faker#T1")
+
+**API Endpoint:**
+```
+GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}
+```
+
+**Example using curl:**
+```bash
+# Replace YOUR_API_KEY with your actual API key
+# Replace Faker and T1 with the player's game name and tag line
+curl -X GET "https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/Faker/T1" \
+     -H "X-Riot-Token: YOUR_API_KEY"
+```
+
+**Example using Python:**
+```python
+import requests
+
+api_key = "YOUR_API_KEY"
+game_name = "Faker"
+tag_line = "T1"
+
+url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+headers = {"X-Riot-Token": api_key}
+
+response = requests.get(url, headers=headers)
+if response.status_code == 200:
+    data = response.json()
+    puuid = data["puuid"]
+    print(f"PUUID for {game_name}#{tag_line}: {puuid}")
+else:
+    print(f"Error: {response.status_code}")
+```
+
+**Response format:**
+```json
+{
+  "puuid": "abc123def456...",
+  "gameName": "Faker",
+  "tagLine": "T1"
+}
+```
+
+#### Method 2: Using online tools
+
+You can also use online PUUID lookup tools, but make sure they're from trusted sources as they require your API key or player information.
+
+**Important Notes:**
+- Use the appropriate regional endpoint (`americas.api.riotgames.com`, `europe.api.riotgames.com`, or `asia.api.riotgames.com`)
+- Rate limits apply (100 requests per 2 minutes for personal API keys)
+- The PUUID is the `puuid` field in the response
 
 ## Project Structure
 
