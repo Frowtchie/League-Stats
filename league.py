@@ -2,11 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This code is using the subprocess and json modules in Python to fetch data from the Riot Games API for a list of matches specified in the matches variable. It then saves the returned data as JSON files in a matches directory, using the match IDs as the filenames.
-The code first imports the subprocess and json modules, which are used for running external commands (in this case, the curl command) and working with JSON data, respectively.
-Next, it defines a list of match IDs to fetch data for and a token for authenticating with the API.
-In the for loop, the code sets the headers for the curl command using the API token, and builds the URL for the API request using the current match ID. It then runs the curl command, decodes the output as a JSON string, and converts it to a Python object using the json.loads() function.
-Finally, it saves the JSON object to a file in the matches directory using the json.dump() function, with indentation set to 4 spaces to make the output more readable.
+Fetches data from the Riot Games API for a list of matches and saves the data as JSON files.
 -----------------------------------------------------------------
 Author: Frowtch
 License: MPL 2.0
@@ -18,155 +14,131 @@ Status: WIP
 
 import subprocess
 import json
+import os
+import argparse
+from typing import List, Dict
 
-puuid = {"Frowtch" : "hu7LrPvdnAMQSYttZlgmBKtyQ4EV2nW_24YFZP5xeQgayOhqcsj8oez8ksHprMRW1scJC7ENFyD-FQ",
-        "Overowser" : "yu20wMq06LlCyzvkfIn5K2Emx2n_urKtJuiJob6Oxtq-fRUGiuY9VRtHVg8NCtwBO9tauLLclW8TMA",
-        "Suro" : "oISoER4IhzrXfUtt--Sh0Vg9lVlitiVTKXDgngIRlCVgY4oDiufwqQjb4f7dmIRQzlL-4bmtOJxl7Q",
-        "Salem" : "pM0TaxQR5yoNGHKuqM9b84Oy-72bLE0z3UF6V-7ehwUW8Gq_YKl9ipqnpIarQCO66tHaMmCyFj_FZw"
-        }
-token ='RGAPI-5687cee8-2d46-419a-89f4-c5615f299130'
-headers = ['-H', 'Accept-Charset: application/x-www-form-urlencoded', '-H', 'Origin: https://developer.riotgames.com', '-H', 'X-Riot-Token: '+token]
+# Constants
+MATCHES_DIR = "matches"
+API_BASE_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/"
+HEADERS_TEMPLATE = {"X-Riot-Token": "{token}"}
 
-def getMatchesByPuuid(puuid, number_of_games=20):
-    """Get last X games IDs from a player's PUUID
+# Player PUUIDs
+PUUIDS = {
+    "Frowtch": "hu7LrPvdnAMQSYttZlgmBKtyQ4EV2nW_24YFZP5xeQgayOhqcsj8oez8ksHprMRW1scJC7ENFyD-FQ",
+    "Overowser": "yu20wMq06LlCyzvkfIn5K2Emx2n_urKtJuiJob6Oxtq-fRUGiuY9VRtHVg8NCtwBO9tauLLclW8TMA",
+    "Suro": "oISoER4IhzrXfUtt--Sh0Vg9lVlitiVTKXDgngIRlCVgY4oDiufwqQjb4f7dmIRQzlL-4bmtOJxl7Q",
+}
 
-    Args:
-        puuid (str): a players PUUID, can be gotten from /lol/summoner/v4/summoners/by-name/{summonerName}
+
+def fetch_match_data(match_id: str, token: str) -> Dict:
     """
-    # Build the URL for the curl command
-    url = f'https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0'
-
-    # Specify number of matches (optional)
-    if number_of_games != 20:
-        url = url + '&count=' + str(number_of_games)
-
-    # Run the curl command and save the output
-    output = subprocess.run(['curl', '-s', url, *headers], stdout=subprocess.PIPE)
-
-    # Decode the output as a string
-    json_string = output.stdout.decode('utf-8')
-
-    # Load the JSON string as a Python object
-    matches = json.loads(json_string)
-
-    return matches
-
-def getMatchByMatchID(match_id):
-    """Get match details from a match ID
+    Fetches match data from the Riot Games API.
 
     Args:
-        matchId (str): ID of the match
-    """
-    # Build the URL for the curl command
-    url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}"
-
-    # Run the curl command and save the output
-    output = subprocess.run(['curl', '-s', url, *headers], stdout=subprocess.PIPE)
-
-    # Decode the output as a string
-    json_string = output.stdout.decode('utf-8')
-
-    # Load the JSON string as a Python object
-    match_details = json.loads(json_string)
-
-    # Save the JSON object to a file
-    with open(f'matches/{match_id}.json', 'w') as f:
-        json.dump(match_details, f, indent=4)
-
-def getMatchTimelineByMatchID(match_id):
-    """Get match details from a match ID
-
-    Args:
-        matchId (str): ID of the match
-    """
-    # Build the URL for the curl command
-    url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
-
-    # Run the curl command and save the output
-    output = subprocess.run(['curl', '-s', url, *headers], stdout=subprocess.PIPE)
-
-    # Decode the output as a string
-    json_string = output.stdout.decode('utf-8')
-
-    # Load the JSON string as a Python object
-    match_details = json.loads(json_string)
-
-    # Save the JSON object to a file
-    with open(f'timelines/{match_id}.json', 'w') as f:
-        json.dump(match_details, f, indent=4)
-
-def extractPlayerData(match_id, puuid):
-    """Extracts player specific data from match details
-
-    Args:
-        match_id (str): id of the match, also name of the file
-        puuid (str): PUUID of player
+        match_id (str): The match ID to fetch data for.
+        token (str): The API token for authentication.
 
     Returns:
-        str: data specific to player with PUUID
+        Dict: The match data as a dictionary.
     """
-    # Open the JSON file
-    with open(f'matches/{match_id}.json') as file:
-        # Load the JSON data from the file
-        json_data = json.load(file)
-    for participant in json_data['info']['participants']:
-        if participant['puuid'] == puuid:
-            with open(f'data/{match_id}-data.json', 'w') as f:
-                json.dump(participant, f, indent=4)
+    headers = {"X-Riot-Token": token}
+    url = f"{API_BASE_URL}{match_id}"
+    result = subprocess.run(
+        ["curl", "-s", "-H", f"X-Riot-Token: {token}", url],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Failed to fetch data for match {match_id}: {result.stderr}"
+        )
+    return json.loads(result.stdout)
 
-def getChampionTags(champion):
-    """Returns the tags of a champion. Available tags are: ['Tank', 'Support', 'Marksman', 'Mage', 'Fighter', 'Assassin']
+
+def save_match_data(match_id: str, data: Dict) -> None:
+    """
+    Saves match data to a JSON file.
 
     Args:
-        champion (str): name of a champion
+        match_id (str): The match ID to use as the filename.
+        data (Dict): The match data to save.
     """
-    tags = ''
-    formatted_champion = champion.title()
-    with open('champions.json') as file:
-        json_data = json.load(file)
-    for tag in json_data['data'][formatted_champion]['tags']:
-        tags = tags + tag + ' '
-    return tags
+    os.makedirs(MATCHES_DIR, exist_ok=True)
+    file_path = os.path.join(MATCHES_DIR, f"{match_id}.json")
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)
+    print(f"Saved match data to {file_path}")
 
-def analyseMatch(match_id):
-    """Returns some key data from a player's match data file
+
+def process_matches(match_ids: List[str], token: str) -> None:
+    """
+    Processes a list of match IDs by fetching and saving their data.
 
     Args:
-        match_id (str): the match ID
+        match_ids (List[str]): A list of match IDs to process.
+        token (str): The API token for authentication.
+    """
+    for match_id in match_ids:
+        try:
+            print(f"Fetching data for match {match_id}...")
+            data = fetch_match_data(match_id, token)
+            save_match_data(match_id, data)
+        except Exception as e:
+            print(f"Error processing match {match_id}: {e}")
+
+
+def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
+    """
+    Fetches the match history for a player.
+
+    Args:
+        puuid (str): The player's PUUID.
+        count (int): The number of matches to fetch.
+        token (str): The API token for authentication.
+
     Returns:
-        result (str): Victory or Defeat
-        Kills (str): number of kills
-        Deaths (str): number of deaths
-        Assists (str): number of assists
+        List[str]: A list of match IDs.
     """
-    with open(f'data/{match_id}-data.json') as file:
-        # Load the JSON data from the file
-        json_data = json.load(file)
-    champion_name = json_data['championName']
-    if json_data['win'] == True:
-        result = 'Victory'
-    else:
-        result = 'Defeat'
-    kills = json_data['kills']
-    deaths = json_data['deaths']
-    assists = json_data['assists']
-    return(champion_name, result, kills, deaths, assists)
+    headers = {"X-Riot-Token": token}
+    url = f"{API_BASE_URL}by-puuid/{puuid}/ids?start=0&count={count}"
+    result = subprocess.run(
+        ["curl", "-s", "-H", f"X-Riot-Token: {token}", url],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to fetch match history: {result.stderr}")
+    return json.loads(result.stdout)
 
 
-if __name__ == '__main__' :
-    wins = 0
-    losses = 0
-    matches = getMatchesByPuuid(puuid['Frowtch'], 50)
-    for match in matches:
-        # getMatchTimelineByMatchID(match)
-        getMatchByMatchID(match)
-        # extractPlayerData(match, puuid['Frowtch'])
-        # data = analyseMatch(match)
-        # # print(data[0] + ', tags: ' + getChampionTags(data[0]))
-        # if data[0] == 'Thresh':
-        #     print(data)
-        #     if data[1] == 'Victory':
-        #         wins = wins + 1
-        #     else:
-        #         losses = losses + 1
-    # print('Winrate: ' + str((wins/(wins+losses))*100) +'%')
+def main():
+    """
+    Main function to fetch and save match data.
+    """
+    parser = argparse.ArgumentParser(description="Fetch match data for a player.")
+    parser.add_argument("player", type=str, help="The player's name (e.g., Frowtch).")
+    parser.add_argument("count", type=int, help="The number of matches to fetch.")
+    args = parser.parse_args()
+
+    token = os.getenv("RIOT_API_TOKEN")
+    if not token:
+        raise EnvironmentError("RIOT_API_TOKEN environment variable is not set.")
+
+    player = args.player
+    count = args.count
+
+    if player not in PUUIDS:
+        raise ValueError(f"Player '{player}' not found in PUUIDS.")
+
+    puuid = PUUIDS[player]
+    print(f"Fetching the last {count} matches for player {player}...")
+    try:
+        match_ids = fetch_match_history(puuid, count, token)
+        process_matches(match_ids, token)
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    main()

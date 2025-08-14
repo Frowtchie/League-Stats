@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# C extensions
+*.so
+
+# Environment variables
+.env
+*.env
+
+# Virtual environments
+venv/
+.env/
+*.venv/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Riot API match data
+matches/
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
