@@ -1,6 +1,11 @@
 import unittest
+import sys
+import os
 from unittest.mock import patch, mock_open
-from league_stats_2023.graph_drakes import read_drake_data, plot_drakes  # Updated import
+
+# Add the stats_visualization directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'stats_visualization', 'visualizations'))
+from graph_drakes import read_drake_data, plot_drakes
 
 class TestGraphDrakes(unittest.TestCase):
     @patch("builtins.open", new_callable=mock_open, read_data="teamname,elders,elementaldrakes\nTeamA,2,5\nTeamB,1,3\n")
