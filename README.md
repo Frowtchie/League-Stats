@@ -1,16 +1,19 @@
 # League Stats
 
-A Python application for fetching League of Legends match data from the Riot Games API and creating visualizations.
+A Python application for analyzing personal League of Legends performance from match data via the Riot Games API. Get detailed insights into your gameplay, track improvement, and identify areas for growth.
 
 ## Features
 
-- **Data Fetching**: Fetch match data from Riot Games API with rate limiting and caching
-- **Data Storage**: Store match data as JSON files with validation
-- **Data Analysis**: Analyze player performance and team statistics
-- **Visualizations**: Create charts for game statistics (drakes, barons, heralds, kills)
-- **Multi-player Support**: Support for multiple players with secure configuration
-- **Robust Error Handling**: Proper logging, retries, and validation
-- **Caching System**: Avoid redundant API calls with intelligent caching
+- **Personal Match Data**: Fetch match history from Riot Games API with rate limiting and caching
+- **Performance Analysis**: Deep dive into your KDA, win rates, and performance trends over time  
+- **Champion Mastery**: Track your performance on different champions and identify your strongest picks
+- **Role Analysis**: Compare your performance across different roles and positions
+- **Objective Control**: Analyze your team's dragon, baron, and herald control
+- **Economic Efficiency**: Track farming performance, gold efficiency, and damage per gold
+- **Early Game Analysis**: Monitor first blood statistics and early game performance
+- **Progression Tracking**: Visualize improvement trends and identify patterns
+- **Multi-player Support**: Analyze multiple accounts with secure configuration
+- **Robust Caching**: Avoid redundant API calls with intelligent match caching
 
 ## Prerequisites
 
@@ -74,17 +77,28 @@ python league.py Frowtch 10
 python league.py Frowtch 5 --log-level DEBUG
 ```
 
-### Generate Visualizations
+### Generate Personal Performance Visualizations
 
 ```bash
-# Generate drake statistics
-python stats_visualization/visualizations/graph_drakes.py
+# Generate comprehensive performance analysis
+python stats_visualization/visualizations/personal_performance.py Frowtch
 
-# Generate baron and herald statistics  
-python stats_visualization/visualizations/graph_barons_heralds.py LEC
+# Generate specific chart types
+python stats_visualization/visualizations/personal_performance.py Frowtch --chart trends
+python stats_visualization/visualizations/personal_performance.py Frowtch --chart champions
+python stats_visualization/visualizations/personal_performance.py Frowtch --chart roles
 
-# Generate kill statistics
-python stats_visualization/visualizations/graph_kills.py TeamName LEC
+# Generate objective control analysis
+python stats_visualization/visualizations/objective_analysis.py Frowtch
+
+# Generate farming and economy analysis
+python stats_visualization/visualizations/farming_analysis.py Frowtch
+
+# Generate updated champion-specific charts
+python stats_visualization/visualizations/graph_drakes.py Frowtch
+python stats_visualization/visualizations/graph_barons_heralds.py Frowtch
+python stats_visualization/visualizations/graph_kills.py Frowtch
+python stats_visualization/visualizations/graph_first_bloods.py Frowtch
 ```
 
 ### Analyze Match Data
@@ -182,19 +196,48 @@ You can also use online PUUID lookup tools, but make sure they're from trusted s
 ```
 League-Stats/
 ├── league.py                    # Main data fetching script
+├── analyze.py                   # Core analysis module
 ├── requirements.txt             # Python dependencies
 ├── config.env.example          # Configuration template
-├── stats_visualization/         # Visualization modules
+├── stats_visualization/         # Personal performance visualization modules
 │   └── visualizations/
-│       ├── graph_drakes.py     # Drake statistics
-│       ├── graph_barons_heralds.py  # Baron/Herald stats
-│       ├── graph_kills.py      # Kill statistics
-│       └── graph_first_bloods.py    # First blood stats
+│       ├── personal_performance.py  # Comprehensive performance analysis
+│       ├── objective_analysis.py    # Objective control analysis
+│       ├── farming_analysis.py      # Economy and farming analysis
+│       ├── graph_drakes.py          # Dragon control visualization
+│       ├── graph_barons_heralds.py  # Baron/Herald visualization
+│       ├── graph_kills.py           # Kill performance analysis
+│       └── graph_first_bloods.py    # Early game analysis
 ├── tests/                      # Unit tests
 ├── matches/                    # Generated match data (gitignored)
 └── docs/                       # Documentation
 
 ```
+
+## Analysis Features
+
+### Performance Tracking
+- **KDA Trends**: Track kill/death/assist ratios over time with trend analysis
+- **Win Rate Progression**: Monitor improvement in win rates across games  
+- **Champion Mastery**: Identify your best champions with detailed performance metrics
+- **Role Performance**: Compare effectiveness across different positions
+
+### Objective Analysis
+- **Dragon Control**: Analyze dragon priority and control rates
+- **Baron/Herald**: Track major objective control and impact on win rate
+- **First Objectives**: Monitor success rates for early objectives
+- **Objective Correlation**: See how objective control affects game outcomes
+
+### Economic Analysis  
+- **CS per Minute**: Track farming efficiency and improvement trends
+- **Gold Efficiency**: Analyze gold generation and spending effectiveness
+- **Damage per Gold**: Monitor combat effectiveness relative to resources
+- **Role-based Economy**: Compare economic performance across positions
+
+### Early Game Analysis
+- **First Blood Statistics**: Track early game aggression and success
+- **Lane Phase Performance**: Monitor early game kill/death patterns
+- **Early Objective Control**: Analyze first tower and early dragon control
 
 ## Development
 
@@ -204,11 +247,39 @@ League-Stats/
 python -m unittest discover tests/ -v
 ```
 
-### Adding New Visualizations
+### Adding New Analysis Features
 
 1. Create a new file in `stats_visualization/visualizations/`
-2. Implement data reading and plotting functions
-3. Add corresponding tests in the `tests/` directory
+2. Implement data extraction and plotting functions
+3. Follow the existing pattern of loading match data and extracting player-specific information
+4. Add corresponding tests in the `tests/` directory
+
+### Example: Creating a New Analysis Module
+
+```python
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+import league
+import analyze
+
+def extract_custom_data(player_puuid: str, matches_dir: str = "matches"):
+    matches = analyze.load_match_files(matches_dir)
+    # Extract and process your custom data
+    return processed_data
+
+def plot_custom_analysis(player_name: str, data):
+    # Create your visualization
+    pass
+
+def main():
+    # Standard argument parsing and execution
+    pass
+
+if __name__ == "__main__":
+    main()
+```
 
 ## API Rate Limits
 
