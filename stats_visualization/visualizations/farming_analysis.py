@@ -136,7 +136,7 @@ def plot_farming_performance(player_name: str, economy_data: Dict[str, Any]):
         roles_list = list(role_cs.keys())
         cs_by_role = [role_cs[role] for role in roles_list]
         
-        bp = ax2.boxplot(cs_by_role, labels=roles_list, patch_artist=True)
+        bp = ax2.boxplot(cs_by_role, tick_labels=roles_list, patch_artist=True)
         for patch in bp['boxes']:
             patch.set_facecolor('lightgreen')
         ax2.set_ylabel('CS per Minute')

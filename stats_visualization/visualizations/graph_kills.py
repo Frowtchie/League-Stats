@@ -174,7 +174,7 @@ def plot_kills_analysis(player_name: str, kills_data: Dict[str, Any]):
         labels.append(f'Losses\n({len(loss_kills)} games)')
     
     if data_to_plot:
-        bp = ax4.boxplot(data_to_plot, labels=labels, patch_artist=True)
+        bp = ax4.boxplot(data_to_plot, tick_labels=labels, patch_artist=True)
         colors = ['lightgreen', 'lightcoral']
         for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
             patch.set_facecolor(color)
@@ -239,7 +239,7 @@ def plot_detailed_performance(player_name: str, kills_data: Dict[str, Any]):
     
     # Kill distribution by champion (box plot)
     champion_kills = [top_champions[champ]['kills'] for champ in champions]
-    bp = ax2.boxplot(champion_kills, labels=champions, patch_artist=True)
+    bp = ax2.boxplot(champion_kills, tick_labels=champions, patch_artist=True)
     
     colors = plt.cm.Set3(np.linspace(0, 1, len(champions)))
     for patch, color in zip(bp['boxes'], colors):
