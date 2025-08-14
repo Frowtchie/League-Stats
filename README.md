@@ -4,12 +4,13 @@ A Python application for fetching League of Legends match data from the Riot Gam
 
 ## Features
 
-- Fetch match data from Riot Games API
-- Store match data as JSON files
-- Visualize game statistics (drakes, barons, heralds, kills)
-- Support for multiple players
-- Proper logging and error handling
-- Rate limiting and retry logic
+- **Data Fetching**: Fetch match data from Riot Games API with rate limiting and caching
+- **Data Storage**: Store match data as JSON files with validation
+- **Data Analysis**: Analyze player performance and team statistics
+- **Visualizations**: Create charts for game statistics (drakes, barons, heralds, kills)
+- **Multi-player Support**: Support for multiple players with secure configuration
+- **Robust Error Handling**: Proper logging, retries, and validation
+- **Caching System**: Avoid redundant API calls with intelligent caching
 
 ## Prerequisites
 
@@ -17,6 +18,26 @@ A Python application for fetching League of Legends match data from the Riot Gam
 - A valid API key from [Riot Developer Portal](https://developer.riotgames.com/)
 
 ## Installation
+
+### Quick Setup (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/Frowtchie/League-Stats.git
+cd League-Stats
+
+# Run the automated setup script
+python setup.py
+```
+
+The setup script will:
+- Check Python version compatibility
+- Install all dependencies
+- Create configuration files
+- Set up necessary directories
+- Run tests to verify installation
+
+### Manual Setup
 
 1. Clone the repository:
 ```bash
@@ -64,6 +85,19 @@ python stats_visualization/visualizations/graph_barons_heralds.py LEC
 
 # Generate kill statistics
 python stats_visualization/visualizations/graph_kills.py TeamName LEC
+```
+
+### Analyze Match Data
+
+```bash
+# Analyze player performance
+python analyze.py --player Frowtch
+
+# Team-wide analysis across all matches
+python analyze.py --team-analysis
+
+# Analyze matches from custom directory
+python analyze.py --player Frowtch --matches-dir custom_matches/
 ```
 
 ## Configuration
