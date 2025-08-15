@@ -11,6 +11,7 @@ A Python application for analyzing personal League of Legends performance from m
 - **Objective Control**: Analyze your team's dragon, baron, and herald control
 - **Economic Efficiency**: Track farming performance, gold efficiency, and damage per gold
 - **Early Game Analysis**: Monitor first blood statistics and early game performance
+- **Jungle Clear Analysis**: ⭐ **NEW!** Calculate first jungle clear times for jungle games with timeline data
 - **Progression Tracking**: Visualize improvement trends and identify patterns
 - **Multi-player Support**: Analyze multiple accounts with secure configuration
 - **Robust Caching**: Avoid redundant API calls with intelligent match caching
@@ -99,6 +100,9 @@ python stats_visualization/visualizations/objective_analysis.py Frowtch
 
 # Generate farming and economy analysis
 python stats_visualization/visualizations/farming_analysis.py Frowtch
+
+# Generate jungle clear time analysis (NEW!)
+python stats_visualization/visualizations/jungle_clear_analysis.py Frowtch
 
 # Generate updated champion-specific charts
 python stats_visualization/visualizations/graph_drakes.py Frowtch
