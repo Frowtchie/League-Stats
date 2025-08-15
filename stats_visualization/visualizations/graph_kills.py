@@ -31,9 +31,7 @@ from stats_visualization.types import KillsData, ChampionStats
 from stats_visualization.utils import save_figure, sanitize_player
 
 
-def extract_kills_data(
-    player_puuid: str, matches_dir: str = "matches"
-) -> KillsData:
+def extract_kills_data(player_puuid: str, matches_dir: str = "matches") -> KillsData:
     """
     Extract kills data for a specific player from match history.
 
@@ -199,7 +197,9 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
     win_kills = [k for k, w in zip(kills_data["kills"], kills_data["wins"]) if w]
     loss_kills = [k for k, w in zip(kills_data["kills"], kills_data["wins"]) if not w]
     # Retained for potential future use (e.g., deeper outcome-based KDA comparison)
-    win_kda = [kda for kda, w in zip(kills_data["kda_ratios"], kills_data["wins"]) if w]  # noqa: F841
+    win_kda = [
+        kda for kda, w in zip(kills_data["kda_ratios"], kills_data["wins"]) if w
+    ]  # noqa: F841
     loss_kda = [
         kda for kda, w in zip(kills_data["kda_ratios"], kills_data["wins"]) if not w
     ]  # noqa: F841
@@ -225,7 +225,11 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
         ax4.set_title(f"{player_name} - Kills by Game Outcome")
         ax4.grid(True, alpha=0.3)
 
-    save_figure(plt.gcf(), f"kills_analysis_{sanitize_player(player_name)}", description="kills analysis")
+    save_figure(
+        plt.gcf(),
+        f"kills_analysis_{sanitize_player(player_name)}",
+        description="kills analysis",
+    )
     plt.show()
 
 

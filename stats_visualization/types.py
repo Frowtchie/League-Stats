@@ -1,4 +1,5 @@
 """Shared TypedDict data structures for visualization modules."""
+
 from __future__ import annotations
 
 from typing import List, TypedDict, Dict

@@ -249,7 +249,9 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     plt.show()
 
 
-def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGameData) -> None:
+def plot_role_early_game_comparison(
+    player_name: str, early_game_data: EarlyGameData
+) -> None:
     """
     Compare early game performance across different roles.
     """

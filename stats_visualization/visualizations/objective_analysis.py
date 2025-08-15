@@ -277,7 +277,9 @@ def plot_first_objectives(player_name: str, objective_data: ObjectiveData) -> No
     plt.show()
 
 
-def plot_objective_win_correlation(player_name: str, objective_data: ObjectiveData) -> None:
+def plot_objective_win_correlation(
+    player_name: str, objective_data: ObjectiveData
+) -> None:
     """
     Plot correlation between objective control and winning.
     """

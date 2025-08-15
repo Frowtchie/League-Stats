@@ -27,9 +27,7 @@ from stats_visualization import analyze
 from stats_visualization.types import DrakeData
 
 
-def extract_drake_data(
-    player_puuid: str, matches_dir: str = "matches"
-) -> DrakeData:
+def extract_drake_data(player_puuid: str, matches_dir: str = "matches") -> DrakeData:
     """
     Extract drake-related data for a specific player from match history.
 

@@ -102,7 +102,9 @@ def extract_baron_herald_data(
     return objective_data
 
 
-def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData) -> None:
+def plot_baron_herald_analysis(
+    player_name: str, objective_data: BaronHeraldData
+) -> None:
     """
     Create comprehensive baron and herald analysis visualization.
     """

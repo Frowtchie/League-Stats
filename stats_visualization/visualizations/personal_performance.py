@@ -27,7 +27,11 @@ def plot_performance_trends(
     wins = 0
     for idx, match in enumerate(matches):
         participant = next(
-            (p for p in match.get("info", {}).get("participants", []) if p.get("puuid") == player_puuid),
+            (
+                p
+                for p in match.get("info", {}).get("participants", [])
+                if p.get("puuid") == player_puuid
+            ),
             None,
         )
         if not participant:
@@ -56,7 +60,11 @@ def plot_performance_trends(
     ax1.plot(game_numbers, kdas, "b-", marker="o", markersize=4, alpha=0.7)
     avg_kda = float(np.mean(kdas))
     ax1.axhline(
-        y=avg_kda, color="r", linestyle="--", alpha=0.7, label=f"Average KDA: {avg_kda:.2f}"
+        y=avg_kda,
+        color="r",
+        linestyle="--",
+        alpha=0.7,
+        label=f"Average KDA: {avg_kda:.2f}",
     )
     ax1.set_xlabel("Game Number")
     ax1.set_ylabel("KDA Ratio")
@@ -75,7 +83,11 @@ def plot_performance_trends(
     ax2.set_ylim(0, 100)
 
     plt.tight_layout()
-    save_figure(fig, f"performance_trends_{sanitize_player(player_name)}", description="performance trends chart")
+    save_figure(
+        fig,
+        f"performance_trends_{sanitize_player(player_name)}",
+        description="performance trends chart",
+    )
     plt.show()
 
 

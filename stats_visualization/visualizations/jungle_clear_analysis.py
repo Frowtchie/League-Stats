@@ -216,7 +216,9 @@ def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
 from stats_visualization.types import JungleData
 
 
-def plot_jungle_clear_analysis(player_name: str, jungle_data: JungleData | Dict[str, Any]):
+def plot_jungle_clear_analysis(
+    player_name: str, jungle_data: JungleData | Dict[str, Any]
+):
     """
     Create comprehensive jungle clear time visualizations.
 
