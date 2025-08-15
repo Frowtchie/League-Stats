@@ -196,6 +196,14 @@ flake8 .
 7. **Fix formatting**: `black .` if needed
 8. **Final test**: Complete test suite should pass
 
+### Release & Documentation Policy
+Single source of truth for releases:
+1. For any user‑visible change (CLI flags, outputs, file names, new/changed visualizations, data model fields, config behavior) update all impacted docs (README, changelog, visualization catalog, CLI reference, contributing).
+2. If version bump needed: update `stats_visualization/__init__.__version__`, move Unreleased changelog entries under dated version, commit `chore(release): vX.Y.Z`, create and push annotated tag, optionally draft GitHub Release.
+3. Use `RELEASE_CHECKLIST.md` for a quick pre‑tag audit.
+
+Assistant Behavior: After qualifying changes the assistant will prompt: "User-visible changes detected; create a new release? (y/n)".
+
 ## API Rate Limits and Best Practices
 
 - Riot API has rate limits - the application handles this automatically

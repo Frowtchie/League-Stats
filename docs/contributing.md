@@ -36,4 +36,17 @@ Conventional prefix recommended:
 Semantic-ish; increment minor for features, patch for fixes.
 
 ## Releasing
-Update `CHANGELOG.md` (Unreleased -> date) then tag: `git tag vX.Y.Z`.
+Follow the Release & Docs Policy:
+1. Update affected docs (README, changelog, visualization catalog, CLI reference).
+2. Move Unreleased entries to a dated version header in `docs/changelog.md`.
+3. Bump `__version__` in `stats_visualization/__init__.py`.
+4. Commit: `chore(release): vX.Y.Z`.
+## Releasing
+See the top-level `RELEASE_CHECKLIST.md`.
+
+Minimum steps:
+1. Update docs & changelog (move Unreleased).
+2. Bump `__version__` in `stats_visualization/__init__.py`.
+3. Commit with `chore(release): vX.Y.Z`.
+4. Annotated tag & push (`git tag -a vX.Y.Z -m "League-Stats X.Y.Z"` then push code + tag).
+5. (Optional) GitHub Release using changelog section.
