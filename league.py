@@ -1,3 +1,69 @@
+def ensure_matches_for_player(
+    puuid: str,
+    token: str,
+    matches_dir: str = "matches",
+    min_matches: int = 1,
+    fetch_count: int = 10,
+) -> int:
+    """
+    Ensure there are at least `min_matches` match files for the given player in the directory.
+    If not, fetch up to `fetch_count` matches and save them.
+
+    Args:
+        puuid (str): Player's PUUID
+        token (str): Riot API token
+        matches_dir (str): Directory to store match files
+        min_matches (int): Minimum number of matches required
+        fetch_count (int): Number of matches to fetch if needed
+
+    Returns:
+        int: Number of match files now present for the player
+    """
+    from pathlib import Path
+    import glob
+
+    matches_path = Path(matches_dir)
+    matches_path.mkdir(exist_ok=True)
+    # Count files containing this puuid (or just count all if not filtering by puuid)
+    match_files = list(matches_path.glob("*.json"))
+    player_match_count = 0
+    for file in match_files:
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # Check if player is in this match
+            if any(
+                p.get("puuid") == puuid
+                for p in data.get("info", {}).get("participants", [])
+            ):
+                player_match_count += 1
+        except Exception:
+            continue
+    if player_match_count >= min_matches:
+        return player_match_count
+    # Fetch and save matches
+    logger.info(
+        f"No or not enough matches found for player {puuid[:10]}. Fetching {fetch_count} matches..."
+    )
+    match_ids = fetch_match_history(puuid, fetch_count, token)
+    process_matches(match_ids, token, use_cache=False)
+    # Recount
+    match_files = list(matches_path.glob("*.json"))
+    player_match_count = 0
+    for file in match_files:
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if any(
+                p.get("puuid") == puuid
+                for p in data.get("info", {}).get("participants", [])
+            ):
+                player_match_count += 1
+        except Exception:
+            continue
+    return player_match_count
+
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -12,6 +78,7 @@ Contact: Frowtch#0001 on Discord
 Status: Production
 """
 
+
 import json
 import os
 import argparse
@@ -21,6 +88,11 @@ import time
 from typing import List, Dict, Optional
 import requests
 from pathlib import Path
+
+# Load environment variables from config.env if present
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path="config.env")
 
 # Constants
 MATCHES_DIR = "matches"
@@ -303,34 +375,55 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
     # Validate input parameters
     if count <= 0:
         raise ValueError("Count must be positive")
-    if count > 100:
-        logger.warning(f"Count {count} exceeds API limit of 100, limiting to 100")
-        count = 100
 
     headers = {"X-Riot-Token": token}
-    url = f"{MATCH_HISTORY_URL}{puuid}/ids?start=0&count={count}"
+    all_match_ids = []
+    start = 0
+    remaining = count
+    max_per_request = 100
 
-    try:
-        logger.info(
-            f"Fetching match history for PUUID {puuid[:10]}... (count: {count})"
-        )
-        response = make_api_request(url, headers)
-        match_ids = response.json()
+    logger.info(f"Fetching up to {count} matches for PUUID {puuid[:10]}...")
+    while remaining > 0:
+        batch_count = min(max_per_request, remaining)
+        url = f"{MATCH_HISTORY_URL}{puuid}/ids?start={start}&count={batch_count}"
+        try:
+            response = make_api_request(url, headers)
+            match_ids = response.json()
+            if not isinstance(match_ids, list):
+                raise ValueError("Expected list of match IDs, got different format")
+            all_match_ids.extend(match_ids)
+            logger.info(
+                f"Fetched {len(match_ids)} match IDs (start={start}, count={batch_count})"
+            )
+            if len(match_ids) < batch_count:
+                # No more matches available
+                break
+            start += batch_count
+            remaining -= batch_count
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 429:
+                retry_after = int(e.response.headers.get("Retry-After", "2"))
+                logger.warning(
+                    f"Rate limit hit (429). Sleeping for {retry_after} seconds..."
+                )
+                import time
 
-        # Validate response
-        if not isinstance(match_ids, list):
-            raise ValueError("Expected list of match IDs, got different format")
+                time.sleep(retry_after)
+                continue
+            else:
+                logger.error(f"Failed to fetch match history: {e}")
+                raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to fetch match history: {e}")
+            raise
+        except ValueError as e:
+            logger.error(
+                f"Failed to parse or validate JSON response for match history: {e}"
+            )
+            raise
 
-        logger.info(f"Retrieved {len(match_ids)} match IDs")
-        return match_ids
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to fetch match history: {e}")
-        raise
-    except ValueError as e:
-        logger.error(
-            f"Failed to parse or validate JSON response for match history: {e}"
-        )
-        raise
+    logger.info(f"Total match IDs fetched: {len(all_match_ids)}")
+    return all_match_ids
 
 
 def main():

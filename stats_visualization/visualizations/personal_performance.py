@@ -86,13 +86,31 @@ from typing import Dict, List, Any, Optional
 from collections import Counter
 import datetime
 import argparse
+
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+from collections import Counter
+import datetime
+import argparse
 import sys
 import os
-
 import requests
 
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Load environment variables from config.env if present
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path="config.env")
+
+# Ensure project root is in sys.path for module imports
+import pathlib
+
+project_root = pathlib.Path(__file__).resolve().parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import league
 import analyze
 
@@ -403,27 +421,14 @@ def main():
             )
             return
 
-    # Check if there are any matches for this user, if not, fetch and clean up
     matches_dir = args.matches_dir
-    player_matches = load_player_match_data(player_puuid, matches_dir)
-    if not player_matches:
-        print(f"No matches found for {player_display}. Fetching latest 20 matches...")
-        # Clean up matches directory
-        matches_path = Path(matches_dir)
-        if matches_path.exists() and matches_path.is_dir():
-            for f in matches_path.glob("*.json"):
-                try:
-                    f.unlink()
-                except Exception as e:
-                    print(f"Failed to delete {f}: {e}")
-        # Fetch new matches
-        try:
-            match_ids = league.fetch_match_history(player_puuid, 20, token)
-            league.process_matches(match_ids, token, use_cache=False)
-            print(f"Fetched and saved {len(match_ids)} matches for {player_display}.")
-        except Exception as e:
-            print(f"Failed to fetch/process matches for {player_display}: {e}")
-            return
+    # Ensure there are matches for this player, fetch if needed
+    num_matches = league.ensure_matches_for_player(
+        player_puuid, token, matches_dir, min_matches=1, fetch_count=20
+    )
+    if num_matches == 0:
+        print(f"Failed to fetch or find any matches for {player_display}.")
+        return
 
     # Generate requested charts
     if args.chart == "trends" or args.chart == "all":
