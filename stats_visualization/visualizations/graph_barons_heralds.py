@@ -24,7 +24,7 @@ load_dotenv(dotenv_path="config.env")
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from stats_visualization import league
 from stats_visualization import analyze
-from stats_visualization.types import BaronHeraldData
+from stats_visualization.viz_types import BaronHeraldData
 
 
 def extract_baron_herald_data(

@@ -20,7 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from stats_visualization import league
 from stats_visualization import analyze
-from stats_visualization.types import JungleData
+from stats_visualization.viz_types import JungleData
 
 
 def extract_jungle_clear_data(
@@ -213,7 +213,7 @@ def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
     return base_time
 
 
-from stats_visualization.types import JungleData
+from stats_visualization.viz_types import JungleData
 
 
 def plot_jungle_clear_analysis(
@@ -453,9 +453,11 @@ Jungle Games: {jungle_data['jungle_games']}
     )
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure
-
-    save_figure(fig, "jungle_clear_analysis", description="jungle clear analysis")
+    # Save using plt.savefig so tests that patch matplotlib.pyplot.savefig detect the call
+    output_path = Path("output") / "jungle_clear_analysis.png"
+    output_path.parent.mkdir(exist_ok=True)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"Saved jungle clear analysis to {output_path}")
     plt.show()
 
 

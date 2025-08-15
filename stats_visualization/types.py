@@ -1,101 +1,17 @@
-"""Shared TypedDict data structures for visualization modules."""
+"""Minimal shim to avoid shadowing the stdlib :mod:`types` module.
 
-from __future__ import annotations
+TypedDict definitions live in ``stats_visualization.viz_types``.
+This file re-exports the real stdlib ``types`` symbols so that importing
+``typing`` works even if this directory is first on ``sys.path``.
+"""
 
-from typing import List, TypedDict, Dict
-import datetime as _dt
+from importlib import import_module as _im
 
+_stdlib_types = _im("types")  # stdlib module
+for _n in dir(_stdlib_types):
+    if not _n.startswith("__"):
+        globals()[_n] = getattr(_stdlib_types, _n)
 
-class ObjectiveBreakdown(TypedDict):
-    player_team: List[int]
-    enemy_team: List[int]
-    wins: List[bool]
-    types: List[str]
+__all__ = [n for n in globals() if not n.startswith("__")]
 
-
-class ObjectiveData(TypedDict):
-    dragons: ObjectiveBreakdown
-    barons: ObjectiveBreakdown
-    heralds: ObjectiveBreakdown
-    towers: ObjectiveBreakdown
-    first_objectives: Dict[str, int]
-    total_games: int
-
-
-class EarlyGameData(TypedDict):
-    first_blood_kills: int
-    first_blood_deaths: int
-    first_blood_assists: int
-    first_tower_kills: int
-    early_kills: List[int]
-    early_deaths: List[int]
-    early_cs: List[int]
-    wins: List[bool]
-    champions: List[str]
-    roles: List[str]
-    total_games: int
-
-
-class BaronHeraldData(TypedDict):
-    player_team_barons: List[int]
-    enemy_team_barons: List[int]
-    player_team_heralds: List[int]
-    enemy_team_heralds: List[int]
-    wins: List[bool]
-    game_durations: List[float]
-    total_games: int
-
-
-class DrakeData(TypedDict):
-    player_team_drakes: List[int]
-    enemy_team_drakes: List[int]
-    wins: List[bool]
-    game_durations: List[float]
-    total_games: int
-
-
-class EconomyData(TypedDict):
-    cs_per_min: List[float]
-    gold_per_min: List[float]
-    damage_per_gold: List[float]
-    vision_score: List[int]
-    game_durations: List[float]
-    total_cs: List[int]
-    total_gold: List[int]
-    total_damage: List[int]
-    roles: List[str]
-    champions: List[str]
-    wins: List[bool]
-    items_purchased: List[int]
-    total_games: int
-
-
-class JungleData(TypedDict):
-    first_clear_times: List[float]
-    champions: List[str]
-    wins: List[bool]
-    game_durations: List[float]
-    clear_efficiency: List[float]
-    total_games: int
-    jungle_games: int
-
-
-class KillsData(TypedDict):
-    kills: List[int]
-    deaths: List[int]
-    assists: List[int]
-    kda_ratios: List[float]
-    kill_participation: List[float]
-    game_dates: List[_dt.datetime]
-    game_durations: List[float]
-    champions: List[str]
-    wins: List[bool]
-    total_games: int
-
-
-class ChampionStats(TypedDict):
-    kills: List[int]
-    deaths: List[int]
-    assists: List[int]
-    kda: List[float]
-    games: int
+del _im, _stdlib_types, _n

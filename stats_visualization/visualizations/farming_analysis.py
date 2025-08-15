@@ -27,7 +27,7 @@ from stats_visualization import league
 from stats_visualization import analyze
 
 
-from stats_visualization.types import EconomyData
+from stats_visualization.viz_types import EconomyData
 
 
 def extract_economy_data(

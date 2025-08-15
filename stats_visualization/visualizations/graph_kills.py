@@ -27,7 +27,7 @@ load_dotenv(dotenv_path="config.env")
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from stats_visualization import league
 from stats_visualization import analyze
-from stats_visualization.types import KillsData, ChampionStats
+from stats_visualization.viz_types import KillsData, ChampionStats
 from stats_visualization.utils import save_figure, sanitize_player
 
 
