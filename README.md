@@ -2,6 +2,11 @@
 
 A Python application for analyzing personal League of Legends performance from match data via the Riot Games API. Get detailed insights into your gameplay, track improvement, and identify areas for growth.
 
+## Version
+
+Current version: **0.2.0**  
+See the [Changelog](docs/changelog.md) for release notes.
+
 ## Features
 
 - **Personal Match Data**: Fetch match history from Riot Games API with rate limiting and caching
@@ -60,13 +65,12 @@ pip install -r requirements.txt
 cp config.env.example config.env
 
 # Edit config.env and add your API token:
-export RIOT_API_TOKEN="your_api_token_here"
-
-# Load the configuration
-source config.env
+RIOT_API_TOKEN=your_api_token_here
+# (No need to source config.env; it is loaded automatically by the scripts)
 ```
 
 ## Usage
+**Note:** All generated figures and analysis outputs are saved in the `output/` directory. Logs are written to the `logs/` directory.
 
 ### Fetch Match Data
 
@@ -111,17 +115,21 @@ python stats_visualization/visualizations/graph_kills.py Frowtch
 python stats_visualization/visualizations/graph_first_bloods.py Frowtch
 ```
 
+
 ### Analyze Match Data
 
 ```bash
-# Analyze player performance
+# Analyze player performance (recommended, by Riot ID)
+python analyze.py --riot-id Frowtch blue
+
+# Analyze player performance (legacy mode, by config name)
 python analyze.py --player Frowtch
 
 # Team-wide analysis across all matches
 python analyze.py --team-analysis
 
 # Analyze matches from custom directory
-python analyze.py --player Frowtch --matches-dir custom_matches/
+python analyze.py --riot-id Frowtch blue --matches-dir custom_matches/
 ```
 
 ## Configuration
@@ -131,6 +139,8 @@ python analyze.py --player Frowtch --matches-dir custom_matches/
 - `RIOT_API_TOKEN` (required): Your Riot Games API token
 
 **Note**: With the new Riot ID-based player lookup, you no longer need to configure individual player PUUIDs. The script will automatically fetch PUUIDs using the Riot API when you provide a game name and tag line.
+
+**No need to source config.env manually:** All scripts automatically load environment variables from `config.env`.
 
 ### Regional Endpoints
 
@@ -149,10 +159,10 @@ For players in other regions, the script will still work as account data is acce
 2. Sign in with your Riot account
 3. Create a new application or use an existing one
 4. Copy your API key
-5. Set it as an environment variable:
+5. Add it to your config.env file:
 
-```bash
-export RIOT_API_TOKEN="your_api_key_here"
+```
+RIOT_API_TOKEN=your_api_key_here
 ```
 
 ### Finding Player Information
@@ -186,7 +196,7 @@ League-Stats/
 ├── league.py                    # Main data fetching script
 ├── analyze.py                   # Core analysis module
 ├── requirements.txt             # Python dependencies
-├── config.env.example          # Configuration template
+├── config.env.example           # Configuration template
 ├── stats_visualization/         # Personal performance visualization modules
 │   └── visualizations/
 │       ├── personal_performance.py  # Comprehensive performance analysis
@@ -198,8 +208,9 @@ League-Stats/
 │       └── graph_first_bloods.py    # Early game analysis
 ├── tests/                      # Unit tests
 ├── matches/                    # Generated match data (gitignored)
-└── docs/                       # Documentation
-
+├── output/                     # All generated figures and analysis outputs
+├── logs/                       # Log files
+└── docs/                       # Documentation (see docs/README or index below)
 ```
 
 ## Analysis Features
@@ -226,6 +237,21 @@ League-Stats/
 - **First Blood Statistics**: Track early game aggression and success
 - **Lane Phase Performance**: Monitor early game kill/death patterns
 - **Early Objective Control**: Analyze first tower and early dragon control
+
+## Documentation Index
+
+Extended documentation lives in the `docs/` folder:
+- Overview: `docs/overview.md`
+- Architecture: `docs/architecture.md`
+- CLI Reference: `docs/cli_reference.md`
+- Metrics Definitions: `docs/metrics_definitions.md`
+- Visualizations Catalog: `docs/visualizations_catalog.md`
+- Fetching Logic: `docs/fetching_logic.md`
+- Player Configuration: `docs/player_config.md`
+- Environment Setup: `docs/environment.md`
+- Contributing Guide: `docs/contributing.md`
+- Troubleshooting: `docs/troubleshooting.md`
+- Changelog: `docs/changelog.md`
 
 ## Development
 

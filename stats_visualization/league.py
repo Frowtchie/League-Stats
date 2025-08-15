@@ -97,7 +97,9 @@ load_dotenv(dotenv_path="config.env")
 # Constants
 MATCHES_DIR = "matches"
 API_BASE_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/"
-TIMELINE_API_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
+TIMELINE_API_URL = (
+    "https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
+)
 MATCH_HISTORY_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/"
 
 # Set up logging
@@ -105,7 +107,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("league_stats.log"),
+        logging.FileHandler("logs/league_stats.log"),
         logging.StreamHandler(sys.stdout),
     ],
 )
@@ -287,7 +289,9 @@ def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict]:
         logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
         return None
     except ValueError as e:
-        logger.warning(f"Failed to parse timeline JSON response for match {match_id}: {e}")
+        logger.warning(
+            f"Failed to parse timeline JSON response for match {match_id}: {e}"
+        )
         return None
 
 
@@ -304,17 +308,19 @@ def fetch_match_with_timeline(match_id: str, token: str) -> Dict:
     """
     # Fetch main match data
     match_data = fetch_match_data(match_id, token)
-    
+
     # Fetch timeline data (optional, don't fail if it's not available)
     timeline_data = fetch_timeline_data(match_id, token)
-    
+
     # Combine the data
     if timeline_data:
-        match_data['timeline'] = timeline_data
+        match_data["timeline"] = timeline_data
         logger.info(f"Successfully combined match and timeline data for {match_id}")
     else:
-        logger.info(f"Timeline data not available for {match_id}, proceeding with match data only")
-    
+        logger.info(
+            f"Timeline data not available for {match_id}, proceeding with match data only"
+        )
+
     return match_data
 
 

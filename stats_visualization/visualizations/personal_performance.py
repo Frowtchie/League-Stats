@@ -1,63 +1,70 @@
+from __future__ import annotations
+
+from typing import TypedDict
+
+
+class _TrendPoint(TypedDict):
+    kda: float
+    cumulative_win_rate: float  # percentage 0-100
+
+
 def plot_performance_trends(
     player_puuid: str, player_name: str, matches_dir: str = "matches"
 ):
-    """
-    Plot KDA and win rate trends over time for a player.
+    """Plot KDA and win rate trends over time for a player.
+
+    Uses shared save_figure utility for consistent output handling.
     """
     matches = load_player_match_data(player_puuid, matches_dir)
     if not matches:
         print(f"No matches found for {player_name}")
         return
-    # Sort matches by game creation time
-    matches.sort(key=lambda x: x["info"].get("gameCreation", 0))
-    game_numbers = []
-    kdas = []
-    win_rates = []
+
+    # Sort chronologically
+    matches.sort(key=lambda x: x.get("info", {}).get("gameCreation", 0))
+
+    trend_points: list[_TrendPoint] = []
     wins = 0
-    for i, match in enumerate(matches):
-        # Find player data in this match
-        player_data = None
-        for participant in match["info"]["participants"]:
-            if participant.get("puuid") == player_puuid:
-                player_data = participant
-                break
-        if not player_data:
+    for idx, match in enumerate(matches):
+        participant = next(
+            (p for p in match.get("info", {}).get("participants", []) if p.get("puuid") == player_puuid),
+            None,
+        )
+        if not participant:
             continue
-        game_numbers.append(i + 1)
-        # Calculate KDA for this game
-        kills = player_data.get("kills", 0)
-        deaths = player_data.get("deaths", 0)
-        assists = player_data.get("assists", 0)
+        kills = participant.get("kills", 0)
+        deaths = participant.get("deaths", 0)
+        assists = participant.get("assists", 0)
         kda = (kills + assists) / max(deaths, 1)
-        kdas.append(kda)
-        # Track win rate
-        if player_data.get("win", False):
+        if participant.get("win", False):
             wins += 1
-        win_rate = wins / (i + 1)
-        win_rates.append(win_rate * 100)  # Convert to percentage
-    # Check for empty data
-    if not game_numbers or not kdas or not win_rates:
+        win_rate = wins / (idx + 1) * 100
+        trend_points.append({"kda": kda, "cumulative_win_rate": win_rate})
+
+    if not trend_points:
         print(
-            f"No valid data to plot for {player_name}. Debug: matches={len(matches)}, game_numbers={len(game_numbers)}, kdas={len(kdas)}, win_rates={len(win_rates)}"
+            f"No valid data to plot for {player_name}. Debug: matches={len(matches)}, usable=0"
         )
         return
-    # Create subplots
+
+    game_numbers = list(range(1, len(trend_points) + 1))
+    kdas = [tp["kda"] for tp in trend_points]
+    win_rates = [tp["cumulative_win_rate"] for tp in trend_points]
+
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
-    # Plot KDA trend
+    # KDA trend
     ax1.plot(game_numbers, kdas, "b-", marker="o", markersize=4, alpha=0.7)
+    avg_kda = float(np.mean(kdas))
     ax1.axhline(
-        y=np.mean(kdas),
-        color="r",
-        linestyle="--",
-        alpha=0.7,
-        label=f"Average KDA: {np.mean(kdas):.2f}",
+        y=avg_kda, color="r", linestyle="--", alpha=0.7, label=f"Average KDA: {avg_kda:.2f}"
     )
     ax1.set_xlabel("Game Number")
     ax1.set_ylabel("KDA Ratio")
     ax1.set_title(f"{player_name} - KDA Trend Over Time")
     ax1.grid(True, alpha=0.3)
     ax1.legend()
-    # Plot win rate trend
+
+    # Win rate trend
     ax2.plot(game_numbers, win_rates, "g-", marker="s", markersize=4, alpha=0.7)
     ax2.axhline(y=50, color="gray", linestyle=":", alpha=0.5, label="50% Win Rate")
     ax2.set_xlabel("Game Number")
@@ -66,7 +73,9 @@ def plot_performance_trends(
     ax2.grid(True, alpha=0.3)
     ax2.legend()
     ax2.set_ylim(0, 100)
+
     plt.tight_layout()
+    save_figure(fig, f"performance_trends_{sanitize_player(player_name)}", description="performance trends chart")
     plt.show()
 
 
@@ -82,18 +91,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from collections import Counter
-import datetime
-import argparse
-
-import json
-import matplotlib.pyplot as plt
-import numpy as np
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from collections import Counter
-import datetime
+from typing import Dict, List, Any
 import argparse
 import sys
 import os
@@ -111,13 +109,14 @@ project_root = pathlib.Path(__file__).resolve().parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.utils import save_figure, sanitize_player
 
 
 def load_player_match_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """
     Load match data for a specific player.
     Args:
@@ -126,8 +125,8 @@ def load_player_match_data(
     Returns:
         list[dict]: List of match data for the player
     """
-    matches = analyze.load_match_files(matches_dir)
-    player_matches = []
+    matches: list[dict[str, Any]] = analyze.load_match_files(matches_dir)  # type: ignore[assignment]
+    player_matches: list[dict[str, Any]] = []
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
             continue
@@ -239,6 +238,11 @@ def plot_champion_performance(
     ax2.set_xlabel("Champion")
 
     plt.tight_layout()
+    save_figure(
+        fig,
+        f"champion_performance_{sanitize_player(player_name)}",
+        description="champion performance chart",
+    )
     plt.show()
 
 
@@ -353,6 +357,11 @@ def plot_role_performance(
     ax4.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
 
     plt.tight_layout()
+    save_figure(
+        fig,
+        f"role_performance_{sanitize_player(player_name)}",
+        description="role performance chart",
+    )
     plt.show()
 
 

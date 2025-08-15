@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
 """
 Objective analysis visualization module for League of Legends match data.
@@ -24,13 +25,14 @@ load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.types import ObjectiveData
 
 
 def extract_objective_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> Dict[str, Any]:
+) -> ObjectiveData:
     """
     Extract objective-related data for a specific player.
 
@@ -42,11 +44,11 @@ def extract_objective_data(
         Dict containing objective statistics
     """
     matches = analyze.load_match_files(matches_dir)
-    objective_data = {
+    objective_data: ObjectiveData = {
         "dragons": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
-        "barons": {"player_team": [], "enemy_team": [], "wins": []},
-        "heralds": {"player_team": [], "enemy_team": [], "wins": []},
-        "towers": {"player_team": [], "enemy_team": [], "wins": []},
+        "barons": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
+        "heralds": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
+        "towers": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
         "first_objectives": {
             "dragon": 0,
             "baron": 0,
@@ -135,7 +137,7 @@ def extract_objective_data(
     return objective_data
 
 
-def plot_objective_control(player_name: str, objective_data: Dict[str, Any]):
+def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> None:
     """
     Plot objective control statistics.
     """
@@ -210,10 +212,17 @@ def plot_objective_control(player_name: str, objective_data: Dict[str, Any]):
             )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"objective_control_{sanitize_player(player_name)}",
+        description="objective control chart",
+    )
     plt.show()
 
 
-def plot_first_objectives(player_name: str, objective_data: Dict[str, Any]):
+def plot_first_objectives(player_name: str, objective_data: ObjectiveData) -> None:
     """
     Plot first objective statistics.
     """
@@ -258,10 +267,17 @@ def plot_first_objectives(player_name: str, objective_data: Dict[str, Any]):
 
     plt.xticks(rotation=45)
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"first_objectives_{sanitize_player(player_name)}",
+        description="first objectives chart",
+    )
     plt.show()
 
 
-def plot_objective_win_correlation(player_name: str, objective_data: Dict[str, Any]):
+def plot_objective_win_correlation(player_name: str, objective_data: ObjectiveData) -> None:
     """
     Plot correlation between objective control and winning.
     """

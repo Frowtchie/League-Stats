@@ -21,13 +21,14 @@ load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.types import EarlyGameData
 
 
 def extract_early_game_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> Dict[str, Any]:
+) -> EarlyGameData:
     """
     Extract early game and first blood data for a specific player from match history.
 
@@ -39,7 +40,7 @@ def extract_early_game_data(
         Dict containing early game statistics
     """
     matches = analyze.load_match_files(matches_dir)
-    early_game_data = {
+    early_game_data: EarlyGameData = {
         "first_blood_kills": 0,
         "first_blood_deaths": 0,
         "first_blood_assists": 0,
@@ -99,7 +100,7 @@ def extract_early_game_data(
     return early_game_data
 
 
-def plot_first_blood_analysis(player_name: str, early_game_data: Dict[str, Any]):
+def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) -> None:
     """
     Create first blood and early game analysis visualization.
     """
@@ -238,10 +239,17 @@ def plot_first_blood_analysis(player_name: str, early_game_data: Dict[str, Any])
             )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"first_bloods_{sanitize_player(player_name)}",
+        description="first blood analysis",
+    )
     plt.show()
 
 
-def plot_role_early_game_comparison(player_name: str, early_game_data: Dict[str, Any]):
+def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGameData) -> None:
     """
     Compare early game performance across different roles.
     """
@@ -309,18 +317,17 @@ def plot_role_early_game_comparison(player_name: str, early_game_data: Dict[str,
         )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"role_early_game_{sanitize_player(player_name)}",
+        description="early game role comparison",
+    )
     plt.show()
 
 
-def main():
-    matches_dir = args.matches_dir
-    # Ensure there are matches for this player, fetch if needed
-    num_matches = league.ensure_matches_for_player(
-        player_puuid, token, matches_dir, min_matches=1, fetch_count=10
-    )
-    if num_matches == 0:
-        print(f"Failed to fetch or find any matches for {player_display}.")
-        return
+def main() -> None:
     """Main function for early game and first blood analysis visualization."""
     parser = argparse.ArgumentParser(
         description="Generate personal early game and first blood statistics visualization"
@@ -361,14 +368,21 @@ def main():
             )
             return
 
+    matches_dir = args.matches_dir
+    num_matches = league.ensure_matches_for_player(
+        player_puuid, token, matches_dir, min_matches=1, fetch_count=10
+    )
+    if num_matches == 0:
+        print(f"Failed to fetch or find any matches for {player_display}.")
+        return
+
     print(f"Analyzing early game data for {player_display}...")
-    early_game_data = extract_early_game_data(player_puuid, args.matches_dir)
+    early_game_data = extract_early_game_data(player_puuid, matches_dir)
 
     if early_game_data["total_games"] == 0:
         print(f"No matches found for {player_display}")
         return
 
-    # Generate visualization
     plot_first_blood_analysis(player_display, early_game_data)
 
     if args.role_comparison:

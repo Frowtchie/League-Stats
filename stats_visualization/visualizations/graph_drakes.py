@@ -7,6 +7,7 @@ Analyzes dragon control from personal match history.
 """
 
 import json
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -21,13 +22,14 @@ load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.types import DrakeData
 
 
 def extract_drake_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> Dict[str, Any]:
+) -> DrakeData:
     """
     Extract drake-related data for a specific player from match history.
 
@@ -39,7 +41,7 @@ def extract_drake_data(
         Dict containing drake statistics
     """
     matches = analyze.load_match_files(matches_dir)
-    drake_data = {
+    drake_data: DrakeData = {
         "player_team_drakes": [],
         "enemy_team_drakes": [],
         "wins": [],
@@ -89,7 +91,7 @@ def extract_drake_data(
     return drake_data
 
 
-def plot_drake_analysis(player_name: str, drake_data: Dict[str, Any]):
+def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
     """
     Create comprehensive drake analysis visualization.
     """
@@ -210,7 +212,13 @@ def plot_drake_analysis(player_name: str, drake_data: Dict[str, Any]):
     ax4.legend()
     ax4.grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"drake_analysis_{sanitize_player(player_name)}",
+        description="drake analysis",
+    )
     plt.show()
 
 

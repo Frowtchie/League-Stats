@@ -7,11 +7,12 @@ Analyzes CS per minute, gold efficiency, and economic performance.
 """
 
 import json
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from collections import Counter, defaultdict
+from typing import Dict, List, Any
+from collections import defaultdict
 import argparse
 import sys
 
@@ -22,13 +23,16 @@ load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+
+
+from stats_visualization.types import EconomyData
 
 
 def extract_economy_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> Dict[str, Any]:
+) -> EconomyData:
     """
     Extract economy and farming data for a specific player.
 
@@ -40,7 +44,7 @@ def extract_economy_data(
         Dict containing economy statistics
     """
     matches = analyze.load_match_files(matches_dir)
-    economy_data = {
+    economy_data: EconomyData = {
         "cs_per_min": [],
         "gold_per_min": [],
         "damage_per_gold": [],
@@ -111,7 +115,7 @@ def extract_economy_data(
     return economy_data
 
 
-def plot_farming_performance(player_name: str, economy_data: Dict[str, Any]):
+def plot_farming_performance(player_name: str, economy_data: EconomyData) -> None:
     """
     Plot farming performance (CS/min) analysis.
     """
@@ -219,10 +223,17 @@ def plot_farming_performance(player_name: str, economy_data: Dict[str, Any]):
         )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"farming_performance_{sanitize_player(player_name)}",
+        description="farming performance chart",
+    )
     plt.show()
 
 
-def plot_gold_efficiency(player_name: str, economy_data: Dict[str, Any]):
+def plot_gold_efficiency(player_name: str, economy_data: EconomyData) -> None:
     """
     Plot gold efficiency and economy analysis.
     """
@@ -306,10 +317,17 @@ def plot_gold_efficiency(player_name: str, economy_data: Dict[str, Any]):
     ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"gold_efficiency_{sanitize_player(player_name)}",
+        description="gold efficiency chart",
+    )
     plt.show()
 
 
-def plot_role_economy_comparison(player_name: str, economy_data: Dict[str, Any]):
+def plot_role_economy_comparison(player_name: str, economy_data: EconomyData) -> None:
     """
     Compare economic performance across different roles.
     """
@@ -403,6 +421,13 @@ def plot_role_economy_comparison(player_name: str, economy_data: Dict[str, Any])
         )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"role_economy_{sanitize_player(player_name)}",
+        description="role economy comparison chart",
+    )
     plt.show()
 
 

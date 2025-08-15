@@ -7,6 +7,7 @@ Analyzes baron and rift herald control from personal match history.
 """
 
 import json
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -21,13 +22,14 @@ load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
-import league
-import analyze
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.types import BaronHeraldData
 
 
 def extract_baron_herald_data(
     player_puuid: str, matches_dir: str = "matches"
-) -> Dict[str, Any]:
+) -> BaronHeraldData:
     """
     Extract baron and herald data for a specific player from match history.
 
@@ -39,7 +41,7 @@ def extract_baron_herald_data(
         Dict containing baron and herald statistics
     """
     matches = analyze.load_match_files(matches_dir)
-    objective_data = {
+    objective_data: BaronHeraldData = {
         "player_team_barons": [],
         "enemy_team_barons": [],
         "player_team_heralds": [],
@@ -100,7 +102,7 @@ def extract_baron_herald_data(
     return objective_data
 
 
-def plot_baron_herald_analysis(player_name: str, objective_data: Dict[str, Any]):
+def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData) -> None:
     """
     Create comprehensive baron and herald analysis visualization.
     """
@@ -251,6 +253,13 @@ def plot_baron_herald_analysis(player_name: str, objective_data: Dict[str, Any])
             )
 
     plt.tight_layout()
+    from stats_visualization.utils import save_figure, sanitize_player
+
+    save_figure(
+        fig,
+        f"barons_heralds_{sanitize_player(player_name)}",
+        description="baron & herald analysis",
+    )
     plt.show()
 
 
