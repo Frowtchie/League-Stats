@@ -97,6 +97,7 @@ load_dotenv(dotenv_path="config.env")
 # Constants
 MATCHES_DIR = "matches"
 API_BASE_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/"
+TIMELINE_API_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
 MATCH_HISTORY_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/"
 
 # Set up logging
@@ -263,6 +264,60 @@ def fetch_match_data(match_id: str, token: str) -> Dict:
         raise
 
 
+def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict]:
+    """
+    Fetches timeline data for a match from the Riot Games API.
+
+    Args:
+        match_id (str): The match ID to fetch timeline data for.
+        token (str): The API token for authentication.
+
+    Returns:
+        Optional[Dict]: The timeline data as a dictionary, or None if failed.
+    """
+    headers = {"X-Riot-Token": token}
+    url = TIMELINE_API_URL.format(match_id=match_id)
+
+    try:
+        logger.info(f"Fetching timeline data for {match_id}")
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
+        return None
+    except ValueError as e:
+        logger.warning(f"Failed to parse timeline JSON response for match {match_id}: {e}")
+        return None
+
+
+def fetch_match_with_timeline(match_id: str, token: str) -> Dict:
+    """
+    Fetches both match data and timeline data, combining them into a single response.
+
+    Args:
+        match_id (str): The match ID to fetch data for.
+        token (str): The API token for authentication.
+
+    Returns:
+        Dict: Combined match data with timeline included.
+    """
+    # Fetch main match data
+    match_data = fetch_match_data(match_id, token)
+    
+    # Fetch timeline data (optional, don't fail if it's not available)
+    timeline_data = fetch_timeline_data(match_id, token)
+    
+    # Combine the data
+    if timeline_data:
+        match_data['timeline'] = timeline_data
+        logger.info(f"Successfully combined match and timeline data for {match_id}")
+    else:
+        logger.info(f"Timeline data not available for {match_id}, proceeding with match data only")
+    
+    return match_data
+
+
 def save_match_data(match_id: str, data: Dict) -> None:
     """
     Saves match data to a JSON file.
@@ -343,7 +398,7 @@ def process_matches(match_ids: List[str], token: str, use_cache: bool = True) ->
 
             # Fetch from API if not cached or cache disabled
             if data is None:
-                data = fetch_match_data(match_id, token)
+                data = fetch_match_with_timeline(match_id, token)
                 save_match_data(match_id, data)
 
             successful += 1
