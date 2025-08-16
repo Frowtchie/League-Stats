@@ -11,7 +11,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Iterable
 from collections import Counter
 import logging
 
@@ -20,6 +20,34 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT)) if str(PROJECT_ROOT) not in sys.path else None
 
 logger = logging.getLogger(__name__)
+
+try:
+    # Import shared match filtering (used across visualization scripts)
+    from stats_visualization.utils import filter_matches  # type: ignore
+except Exception:  # pragma: no cover - fallback if path issues
+    filter_matches = None  # type: ignore
+
+
+def apply_analysis_filters(
+    matches: List[Dict[str, Any]],
+    *,
+    include_aram: bool = False,
+    queue_filter: Iterable[int] | None = None,
+    game_mode_whitelist: Iterable[str] | None = None,
+) -> List[Dict[str, Any]]:
+    """Apply centralized match filtering for analyze CLI.
+
+    Mirrors visualization scripts: ARAM excluded by default; optional queue & gameMode whitelists.
+    If filtering utility unavailable, returns matches unchanged.
+    """
+    if filter_matches is None:
+        return matches
+    return filter_matches(
+        matches,
+        include_aram=include_aram,
+        allowed_queue_ids=queue_filter,
+        allowed_game_modes=game_mode_whitelist,
+    )
 
 
 def _count_player_matches(matches: List[Dict[str, Any]], player_puuid: str) -> int:
@@ -269,33 +297,39 @@ def main():
     parser = argparse.ArgumentParser(description="Analyze League of Legends match data")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
+        "-p",
         "--player",
         type=str,
         help="Player name to analyze (must exist in config) [legacy mode]",
     )
     group.add_argument(
+        "-i",
         "--riot-id",
         nargs=2,
-        metavar=("GAME_NAME", "TAG_LINE"),
-        help="Riot ID: game name and tag line (e.g. 'Frowtch blue')",
+        metavar=("IGN", "TAG_LINE"),
+        help="Riot ID: in-game name (IGN) and tag line (e.g. 'Frowtch blue')",
     )
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
     )
     parser.add_argument(
+        "-t",
         "--team-analysis",
         action="store_true",
         help="Show team-wide analysis instead of player-specific",
     )
     parser.add_argument(
+        "-d",
         "--debug",
         action="store_true",
         help="Enable debug logging (overrides --log-level)",
     )
     parser.add_argument(
+        "-l",
         "--log-level",
         type=str,
         default="INFO",
@@ -303,21 +337,62 @@ def main():
         help="Logging level (ignored if --debug is set)",
     )
     parser.add_argument(
+        "-n",
         "--min-matches",
         type=int,
         default=5,
         help="Minimum local matches required for player analysis (auto-fetch if fewer)",
     )
     parser.add_argument(
+        "-f",
         "--fetch-count",
         type=int,
         default=10,
         help="Number of matches to fetch when auto-fetch triggers",
     )
     parser.add_argument(
+        "-X",
         "--no-auto-fetch",
         action="store_true",
         help="Disable automatic fetching of matches when insufficient local data",
+    )
+    # Filtering flags (aligned with visualization scripts)
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches (excluded by default)",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        type=int,
+        nargs="*",
+        help="Restrict to queue IDs (e.g. 420 440). If omitted, all queues included.",
+    )
+    parser.add_argument(
+        "-R",
+        "--ranked-only",
+        action="store_true",
+        help="Shortcut for --queue 420 440 (Ranked Solo/Duo + Flex)",
+    )
+    parser.add_argument(
+        "-M",
+        "--modes",
+        nargs="*",
+        help="Whitelist gameMode values (e.g. CLASSIC CHERRY). If provided, must match exactly.",
+    )
+    parser.add_argument(
+        "-g",
+        "--generate-visuals",
+        action="store_true",
+        help="After analysis, generate all visualization charts (drakes, barons/heralds, kills, farming, jungle clear, objectives, personal performance).",
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs before generating visuals when --generate-visuals is used (default is to clean).",
     )
     args = parser.parse_args()
 
@@ -326,13 +401,27 @@ def main():
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
     logger.debug("Entered main() with args: %s", args)
 
-    # Load matches
+    # Load matches (unfiltered first for potential auto-fetch logic)
     matches = load_match_files(args.matches_dir)
-    logger.debug("Loaded %d matches from %s", len(matches), args.matches_dir)
+    logger.debug("Loaded %d raw matches from %s", len(matches), args.matches_dir)
+
+    # Derive queue filter list (ranked-only shortcut)
+    queue_filter = args.queue
+    if args.ranked_only and queue_filter is None:
+        queue_filter = [420, 440]
+
+    # Apply filters early for team analysis path
+    filtered_matches = apply_analysis_filters(
+        matches,
+        include_aram=args.include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=args.modes,
+    )
+    logger.debug("Filtered matches: %d (from %d)", len(filtered_matches), len(matches))
 
     if args.team_analysis:
         logger.debug("Running team analysis")
-        team_stats = analyze_team_performance(matches)
+        team_stats = analyze_team_performance(filtered_matches)
         print_team_report(team_stats)
         return
 
@@ -350,8 +439,8 @@ def main():
         game_name, tag_line = args.riot_id
         original_label = f"{game_name}#{tag_line}"
         # Generate case-insensitive variants to try
-        variants = []
-        seen = set()
+        variants: list[tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
         game_name_variants = {
             game_name,
             game_name.lower(),
@@ -431,6 +520,13 @@ def main():
                         duration = time.time() - started
                         # Reload matches after fetch
                         matches = load_match_files(args.matches_dir)
+                        # Re-apply filters after fetch
+                        filtered_matches = apply_analysis_filters(
+                            matches,
+                            include_aram=args.include_aram,
+                            queue_filter=queue_filter,
+                            game_mode_whitelist=args.modes,
+                        )
                         new_player_matches = _count_player_matches(
                             matches, player_puuid
                         )
@@ -460,12 +556,275 @@ def main():
             logger.debug("Auto-fetch setup encountered an error: %s", e)
 
     logger.debug("Analyzing player %s", player_label)
-    player_stats = analyze_player_performance(matches, player_puuid)
+    player_stats = analyze_player_performance(filtered_matches, player_puuid)
     logger.debug("Player stats computed: %s", player_stats)
     if player_stats["total_games"] == 0:
         print(f"No matches found for player {player_label}")
         return
     print_player_report(player_stats, player_label)
+
+    # Optional bulk visualization generation
+    if args.generate_visuals:
+        if args.team_analysis:
+            print("--generate-visuals ignored in team analysis mode.")
+            return
+        try:
+            generate_all_visuals(
+                player_label,
+                player_puuid,
+                include_aram=args.include_aram,
+                queue_filter=queue_filter,
+                game_mode_whitelist=args.modes,
+                clean=not args.no_clean_output,
+                matches_dir=args.matches_dir,
+            )
+        except Exception as e:  # pragma: no cover - broad safety
+            logger.error("Visualization generation failed: %s", e)
+            print(f"Visualization generation failed: {e}")
+
+
+def generate_all_visuals(
+    player_label: str,
+    player_puuid: str,
+    *,
+    include_aram: bool = False,
+    queue_filter: Iterable[int] | None = None,
+    game_mode_whitelist: Iterable[str] | None = None,
+    clean: bool = True,
+    matches_dir: str = "matches",
+) -> None:
+    """Generate the full suite of visualization charts for a player.
+
+    Imports each visualization module lazily and invokes its extraction + plot routines.
+    A single optional output directory cleanup occurs at the start to avoid wiping
+    newly created charts mid-run (visual scripts normally auto-clean individually).
+
+    Args:
+        player_label: Display label (e.g. Frowtch#blue)
+        player_puuid: Player unique identifier
+        include_aram / queue_filter / game_mode_whitelist: Filtering options
+        clean: If True, remove existing PNGs before generation
+        matches_dir: Directory with match JSONs
+    """
+    from stats_visualization.utils import clean_output, sanitize_player, save_figure  # type: ignore
+
+    print("\n=== Generating visualization suite ===")
+    if clean:
+        clean_output()
+
+    # Track successes / failures
+    results: list[tuple[str, str]] = []
+
+    from typing import Callable
+
+    def _run(name: str, func: Callable[[], None]):
+        try:
+            func()
+            results.append((name, "ok"))
+        except Exception as exc:  # pragma: no cover - defensive
+            results.append((name, f"fail: {exc}"))
+
+    # 1. Personal performance (trends, champions, roles)
+    from stats_visualization.visualizations import personal_performance as _pp  # type: ignore
+
+    _run(
+        "personal_trends",
+        lambda: _pp.plot_performance_trends(
+            player_puuid,
+            player_label,
+            matches_dir,
+            include_aram=include_aram,
+            queue_filter=list(queue_filter) if queue_filter is not None else None,
+            game_mode_whitelist=(
+                list(game_mode_whitelist) if game_mode_whitelist is not None else None
+            ),
+        ),
+    )
+    _run(
+        "personal_champions",
+        lambda: _pp.plot_champion_performance(
+            player_puuid,
+            player_label,
+            matches_dir,
+            include_aram=include_aram,
+            queue_filter=list(queue_filter) if queue_filter is not None else None,
+            game_mode_whitelist=(
+                list(game_mode_whitelist) if game_mode_whitelist is not None else None
+            ),
+        ),
+    )
+    _run(
+        "personal_roles",
+        lambda: _pp.plot_role_performance(
+            player_puuid,
+            player_label,
+            matches_dir,
+            include_aram=include_aram,
+            queue_filter=list(queue_filter) if queue_filter is not None else None,
+            game_mode_whitelist=(
+                list(game_mode_whitelist) if game_mode_whitelist is not None else None
+            ),
+        ),
+    )
+
+    # 2. Kills
+    from stats_visualization.visualizations import graph_kills as _gk  # type: ignore
+
+    _run(
+        "kills",
+        lambda: _gk.plot_kills_analysis(
+            player_label,
+            _gk.extract_kills_data(
+                player_puuid,
+                matches_dir,
+                include_aram=include_aram,
+                queue_filter=list(queue_filter) if queue_filter else None,
+                game_mode_whitelist=(
+                    list(game_mode_whitelist) if game_mode_whitelist else None
+                ),
+            ),
+        ),
+    )
+
+    # 3. Drake control
+    from stats_visualization.visualizations import graph_drakes as _gd  # type: ignore
+
+    _run(
+        "drakes",
+        lambda: _gd.plot_drake_analysis(
+            player_label,
+            _gd.extract_drake_data(
+                player_puuid,
+                matches_dir,
+                include_aram=include_aram,
+                queue_filter=list(queue_filter) if queue_filter else None,
+                game_mode_whitelist=(
+                    list(game_mode_whitelist) if game_mode_whitelist else None
+                ),
+            ),
+        ),
+    )
+
+    # 4. Baron / Herald
+    from stats_visualization.visualizations import graph_barons_heralds as _bh  # type: ignore
+
+    _run(
+        "barons_heralds",
+        lambda: _bh.plot_baron_herald_analysis(
+            player_label,
+            _bh.extract_baron_herald_data(
+                player_puuid,
+                matches_dir,
+                include_aram=include_aram,
+                queue_filter=list(queue_filter) if queue_filter else None,
+                game_mode_whitelist=(
+                    list(game_mode_whitelist) if game_mode_whitelist else None
+                ),
+            ),
+        ),
+    )
+
+    # 5. Objectives (control, first, correlation)
+    from stats_visualization.visualizations import objective_analysis as _oa  # type: ignore
+
+    _run(
+        "objectives_control",
+        lambda: _oa.plot_objective_control(
+            player_label,
+            _oa.extract_objective_data(
+                player_puuid,
+                matches_dir,
+                include_aram=include_aram,
+                queue_filter=list(queue_filter) if queue_filter else None,
+                game_mode_whitelist=(
+                    list(game_mode_whitelist) if game_mode_whitelist else None
+                ),
+            ),
+        ),
+    )
+    # reuse extracted data once for the next two plots to avoid re-loading if desired
+    try:
+        _obj_data_cache = _oa.extract_objective_data(
+            player_puuid,
+            matches_dir,
+            include_aram=include_aram,
+            queue_filter=list(queue_filter) if queue_filter else None,
+            game_mode_whitelist=(
+                list(game_mode_whitelist) if game_mode_whitelist else None
+            ),
+        )
+    except Exception:  # pragma: no cover
+        _obj_data_cache = None
+    if _obj_data_cache:
+        _run(
+            "objectives_first",
+            lambda: _oa.plot_first_objectives(player_label, _obj_data_cache),
+        )
+        _run(
+            "objectives_correlation",
+            lambda: _oa.plot_objective_win_correlation(player_label, _obj_data_cache),
+        )
+
+    # 6. Farming / economy (farming, gold, roles)
+    from stats_visualization.visualizations import farming_analysis as _fa  # type: ignore
+
+    try:
+        _econ = _fa.extract_economy_data(
+            player_puuid,
+            matches_dir,
+            include_aram=include_aram,
+            queue_filter=list(queue_filter) if queue_filter else None,
+            game_mode_whitelist=(
+                list(game_mode_whitelist) if game_mode_whitelist else None
+            ),
+        )
+    except Exception:  # pragma: no cover
+        _econ = None
+    if _econ:
+        _run("farming", lambda: _fa.plot_farming_performance(player_label, _econ))
+        _run("gold_efficiency", lambda: _fa.plot_gold_efficiency(player_label, _econ))
+        _run(
+            "role_economy",
+            lambda: _fa.plot_role_economy_comparison(player_label, _econ),
+        )
+
+    # 7. First blood / early game
+    from stats_visualization.visualizations import graph_first_bloods as _fb  # type: ignore
+
+    _run(
+        "first_bloods",
+        lambda: _fb.plot_first_blood_analysis(
+            player_label,
+            _fb.extract_early_game_data(player_puuid, matches_dir),
+        ),
+    )
+
+    # 8. Jungle clear
+    from stats_visualization.visualizations import jungle_clear_analysis as _jc  # type: ignore
+
+    _run(
+        "jungle_clear",
+        lambda: _jc.plot_jungle_clear_analysis(
+            player_label,
+            _jc.extract_jungle_clear_data(
+                player_puuid,
+                matches_dir,
+                include_aram=include_aram,
+                queue_filter=list(queue_filter) if queue_filter else None,
+                game_mode_whitelist=(
+                    list(game_mode_whitelist) if game_mode_whitelist else None
+                ),
+            ),
+        ),
+    )
+
+    # Summary
+    successes = sum(1 for _, r in results if r == "ok")
+    print(
+        f"Visualization generation complete: {successes}/{len(results)} succeeded. Details: "
+    )
+    for name, status in results:
+        print(f"  - {name}: {status}")
 
 
 if __name__ == "__main__":  # ensure CLI works

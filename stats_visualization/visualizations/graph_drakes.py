@@ -25,9 +25,16 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import DrakeData
+from stats_visualization.utils import filter_matches
 
 
-def extract_drake_data(player_puuid: str, matches_dir: str = "matches") -> DrakeData:
+def extract_drake_data(
+    player_puuid: str,
+    matches_dir: str = "matches",
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
+) -> DrakeData:
     """
     Extract drake-related data for a specific player from match history.
 
@@ -38,7 +45,13 @@ def extract_drake_data(player_puuid: str, matches_dir: str = "matches") -> Drake
     Returns:
         Dict containing drake statistics
     """
-    matches = analyze.load_match_files(matches_dir)
+    raw_matches = analyze.load_match_files(matches_dir)
+    matches = filter_matches(
+        raw_matches,
+        include_aram=include_aram,
+        allowed_queue_ids=queue_filter,
+        allowed_game_modes=game_mode_whitelist,
+    )
     drake_data: DrakeData = {
         "player_team_drakes": [],
         "enemy_team_drakes": [],
@@ -50,6 +63,8 @@ def extract_drake_data(player_puuid: str, matches_dir: str = "matches") -> Drake
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
             continue
+
+        # (Filtering already applied globally.)
 
         # Find player's team ID
         player_team_id = None
@@ -223,15 +238,49 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
 def main():
     """Main function for drake analysis visualization."""
     parser = argparse.ArgumentParser(
-        description="Generate personal drake statistics visualization"
+        description="Generate personal drake statistics visualization (Summoner's Rift by default – ARAM excluded unless --include-aram)"
     )
-    parser.add_argument("game_name", type=str, help="Riot game name (e.g. frowtch)")
+    parser.add_argument(
+        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
+    )
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
+    )
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches (excluded by default).",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        type=int,
+        nargs="*",
+        help="Restrict to specific queue IDs (space separated). Example: --queue 420 440",
+    )
+    parser.add_argument(
+        "-R",
+        "--ranked-only",
+        action="store_true",
+        help="Shortcut for --queue 420 440 (Ranked Solo/Duo + Flex).",
+    )
+    parser.add_argument(
+        "-M",
+        "--modes",
+        nargs="*",
+        help="Whitelist specific gameMode values (e.g. CLASSIC CHERRY).",
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs in output/ (default behavior is to clean)",
     )
 
     args = parser.parse_args()
@@ -267,8 +316,22 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
+    from stats_visualization.utils import clean_output
+
+    if not args.no_clean_output:
+        clean_output()
+
     print(f"Analyzing drake data for {player_display}...")
-    drake_data = extract_drake_data(player_puuid, matches_dir)
+    queue_filter = args.queue
+    if args.ranked_only:
+        queue_filter = [420, 440] if queue_filter is None else queue_filter
+    drake_data = extract_drake_data(
+        player_puuid,
+        matches_dir,
+        include_aram=args.include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=args.modes,
+    )
 
     # Generate visualization
     plot_drake_analysis(player_display, drake_data)

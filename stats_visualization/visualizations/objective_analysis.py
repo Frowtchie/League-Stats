@@ -28,10 +28,15 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import ObjectiveData
+from stats_visualization.utils import filter_matches
 
 
 def extract_objective_data(
-    player_puuid: str, matches_dir: str = "matches"
+    player_puuid: str,
+    matches_dir: str = "matches",
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ) -> ObjectiveData:
     """
     Extract objective-related data for a specific player.
@@ -43,7 +48,13 @@ def extract_objective_data(
     Returns:
         Dict containing objective statistics
     """
-    matches = analyze.load_match_files(matches_dir)
+    raw_matches = analyze.load_match_files(matches_dir)
+    matches = filter_matches(
+        raw_matches,
+        include_aram=include_aram,
+        allowed_queue_ids=queue_filter,
+        allowed_game_modes=game_mode_whitelist,
+    )
     objective_data: ObjectiveData = {
         "dragons": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
         "barons": {"player_team": [], "enemy_team": [], "wins": [], "types": []},
@@ -62,6 +73,9 @@ def extract_objective_data(
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
             continue
+
+        # Exclude ARAM matches by default since they lack SR objectives like Baron/Herald/standard Dragons.
+        # filtering already applied
 
         # Find player's team ID
         player_team_id = None
@@ -368,20 +382,52 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate objective analysis visualizations"
     )
-    parser.add_argument("game_name", type=str, help="Riot game name (e.g. frowtch)")
+    parser.add_argument(
+        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
+    )
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
     )
     parser.add_argument(
+        "-c",
         "--chart",
         type=str,
         choices=["control", "first", "correlation", "all"],
         default="all",
         help="Type of chart to generate",
+    )
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches (excluded by default)",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        type=int,
+        nargs="*",
+        help="Restrict to queue IDs (e.g. 420 440)",
+    )
+    parser.add_argument(
+        "-R", "--ranked-only", action="store_true", help="Shortcut for --queue 420 440"
+    )
+    parser.add_argument(
+        "-M",
+        "--modes",
+        nargs="*",
+        help="Whitelist gameMode values (e.g. CLASSIC CHERRY)",
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs in output/ (default behavior is to clean)",
     )
 
     args = parser.parse_args()
@@ -417,8 +463,22 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
+    from stats_visualization.utils import clean_output
+
+    if not args.no_clean_output:
+        clean_output()
+
     print(f"Analyzing objective data for {player_display}...")
-    objective_data = extract_objective_data(player_puuid, matches_dir)
+    queue_filter = args.queue
+    if args.ranked_only and queue_filter is None:
+        queue_filter = [420, 440]
+    objective_data = extract_objective_data(
+        player_puuid,
+        matches_dir,
+        include_aram=args.include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=args.modes,
+    )
 
     # Generate requested charts
     if args.chart == "control" or args.chart == "all":

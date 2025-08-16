@@ -21,10 +21,15 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import JungleData
+from stats_visualization.utils import filter_matches
 
 
 def extract_jungle_clear_data(
-    player_puuid: str, matches_dir: str = "matches"
+    player_puuid: str,
+    matches_dir: str = "matches",
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ) -> JungleData:
     """
     Extract jungle clear time data for a specific player.
@@ -36,7 +41,13 @@ def extract_jungle_clear_data(
     Returns:
         Dict containing jungle clear statistics
     """
-    matches = analyze.load_match_files(matches_dir)
+    raw_matches = analyze.load_match_files(matches_dir)
+    matches = filter_matches(
+        raw_matches,
+        include_aram=include_aram,
+        allowed_queue_ids=queue_filter,
+        allowed_game_modes=game_mode_whitelist,
+    )
     jungle_data: JungleData = {
         "first_clear_times": [],
         "champions": [],
@@ -466,13 +477,44 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze jungle clear times for League of Legends matches"
     )
-    parser.add_argument("game_name", type=str, help="Riot game name (e.g. frowtch)")
+    parser.add_argument(
+        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
+    )
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
+    )
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches (excluded by default)",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        type=int,
+        nargs="*",
+        help="Restrict to queue IDs (e.g. 420 440)",
+    )
+    parser.add_argument(
+        "-R", "--ranked-only", action="store_true", help="Shortcut for --queue 420 440"
+    )
+    parser.add_argument(
+        "-M",
+        "--modes",
+        nargs="*",
+        help="Whitelist gameMode values (e.g. CLASSIC CHERRY)",
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs in output/ (default behavior is to clean)",
     )
 
     args = parser.parse_args()
@@ -508,8 +550,22 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
+    from stats_visualization.utils import clean_output
+
+    if not args.no_clean_output:
+        clean_output()
+
     print(f"Analyzing jungle clear times for {player_display}...")
-    jungle_data = extract_jungle_clear_data(player_puuid, matches_dir)
+    queue_filter = args.queue
+    if args.ranked_only and queue_filter is None:
+        queue_filter = [420, 440]
+    jungle_data = extract_jungle_clear_data(
+        player_puuid,
+        matches_dir,
+        include_aram=args.include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=args.modes,
+    )
 
     # Create visualization
     plot_jungle_clear_analysis(player_display, jungle_data)

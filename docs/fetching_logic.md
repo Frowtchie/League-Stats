@@ -16,7 +16,7 @@ Ensure a minimum number of recent matches locally for analysis without manual in
 - Prints summary: before -> after counts and time taken.
 
 ## Case-Insensitive Riot ID Resolution
-- Generates variants (original, lower, upper, title) for game name & tag line.
+- Generates variants (original, lower, upper, title) for the IGN (in‑game name) & tag line.
 - Attempts each until PUUID fetch succeeds or exhausts variants.
 
 ## Failure Modes

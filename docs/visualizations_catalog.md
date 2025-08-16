@@ -2,19 +2,19 @@
 
 | File | Output Name Pattern | Focus | Key Insights |
 |------|---------------------|-------|-------------|
-| graph_drakes.py | drake_analysis_<player>.png | Dragon counts & trends | Player vs enemy drakes, temporal control |
-| graph_barons_heralds.py | barons_heralds_<player>.png | Baron/Herald control | Objective advantage & win correlation |
+| graph_drakes.py | drake_analysis_<player>.png | Dragon counts & trends | Player vs enemy drakes, temporal control (ARAM excluded by default; filtering flags) |
+| graph_barons_heralds.py | barons_heralds_<player>.png | Baron/Herald control | Objective advantage & win correlation (ARAM excluded by default; filtering flags) |
 | graph_first_bloods.py | first_bloods_<player>.png | Early aggression & outcomes | Early performance vs win rate |
-| graph_kills.py | kills_analysis_<player>.png | Kills/KDA progression | Trend lines & participation |
-| farming_analysis.py (farming) | farming_performance_<player>.png | CS distribution & role variance | Consistency & role differences |
-| farming_analysis.py (gold) | gold_efficiency_<player>.png | Gold & damage efficiency | Correlation & economy pacing |
-| farming_analysis.py (roles) | role_economy_<player>.png | Economy by role | Comparative benchmarks |
-| jungle_clear_analysis.py | jungle_clear_analysis.png | First clear & efficiency | Clear timing consistency |
-| objective_analysis.py (control) | objective_control_<player>.png | Team objective averages | Control vs win indicators |
-| objective_analysis.py (first) | first_objectives_<player>.png | First objective success | Early control impact |
-| personal_performance.py (trends) | performance_trends_<player>.png | KDA & win rate trends | Improvement trajectory |
-| personal_performance.py (champions) | champion_performance_<player>.png | Champion stats | Champion pool strengths |
-| personal_performance.py (roles) | role_performance_<player>.png | Role performance | Role-specific consistency |
+| graph_kills.py | kills_analysis_<player>.png | Kills/KDA progression | Trend lines & participation (filtering flags) |
+| farming_analysis.py (farming) | farming_performance_<player>.png | CS distribution & role variance | Consistency & role differences (filtering flags) |
+| farming_analysis.py (gold) | gold_efficiency_<player>.png | Gold & damage efficiency | Correlation & economy pacing (filtering flags) |
+| farming_analysis.py (roles) | role_economy_<player>.png | Economy by role | Comparative benchmarks (filtering flags) |
+| jungle_clear_analysis.py | jungle_clear_analysis.png | First clear & efficiency | Clear timing consistency (filtering flags) |
+| objective_analysis.py (control) | objective_control_<player>.png | Team objective averages | Control vs win indicators (ARAM excluded by default; filtering flags) |
+| objective_analysis.py (first) | first_objectives_<player>.png | First objective success | Early control impact (ARAM excluded by default; filtering flags) |
+| personal_performance.py (trends) | performance_trends_<player>.png | KDA & win rate trends | Improvement trajectory (filtering flags) |
+| personal_performance.py (champions) | champion_performance_<player>.png | Champion stats | Champion pool strengths (filtering flags) |
+| personal_performance.py (roles) | role_performance_<player>.png | Role performance | Role-specific consistency (filtering flags) |
 
 ## Naming Conventions
 - Replace `#` with `_` in player identifier.
@@ -28,6 +28,9 @@
 
 ## Figure Saving & Utilities
 All visualization scripts now use the centralized helper `save_figure` from `stats_visualization/utils.py`.
+
+Most scripts now support centralized match filtering via shared flags:
+`--include-aram`, `--queue`, `--ranked-only`, `--modes`. These combine (logical AND) and default to excluding ARAM with no queue/mode restriction.
 
 Benefits:
 - Consistent DPI (300) and tight bounding box.

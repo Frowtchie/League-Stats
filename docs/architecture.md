@@ -29,7 +29,7 @@ Riot API -> league.ensure_matches_for_player -> matches/*.json -> analysis (anal
 - Corrupt JSON skipped with warning.
 
 ## Case-Insensitive Riot ID Resolution
-- `analyze.py` generates casing variants for game name and tag line until a successful PUUID fetch.
+- `analyze.py` generates casing variants for the IGN (in‑game name) and tag line until a successful PUUID fetch.
 
 ## Auto-Fetch Logic
 1. Count local matches containing player PUUID.

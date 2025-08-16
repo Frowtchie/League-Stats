@@ -43,8 +43,8 @@ League Stats is a Python application for analyzing personal League of Legends pe
 ## Core Functionality
 
 ### Data Fetching
-- Fetch match data: `python3 league.py <game_name> <tag_line> <count>`
-- Example: `python3 league.py Frowtch blue 5`
+- Fetch match data: `python3 league.py <IGN> <tag_line> <count>`
++ Example: `python3 league.py Frowtch blue 5`
 - Saves JSON files to `matches/` directory
 - **Requires valid RIOT_API_TOKEN in environment**
 
@@ -56,13 +56,13 @@ League Stats is a Python application for analyzing personal League of Legends pe
 ### Visualizations
 Generate performance charts with scripts in `stats_visualization/visualizations/`:
 ```bash
-# Comprehensive analysis (uses Riot ID format: game_name + tag_line)
-python3 stats_visualization/visualizations/personal_performance.py <game_name> <tag_line>
+# Comprehensive analysis (uses Riot ID format: IGN + tag_line)
+python3 stats_visualization/visualizations/personal_performance.py <IGN> <tag_line>
 
 # Specific chart types  
-python3 stats_visualization/visualizations/personal_performance.py <game_name> <tag_line> --chart trends
-python3 stats_visualization/visualizations/personal_performance.py <game_name> <tag_line> --chart champions
-python3 stats_visualization/visualizations/personal_performance.py <game_name> <tag_line> --chart roles
+python3 stats_visualization/visualizations/personal_performance.py <IGN> <tag_line> --chart trends
+python3 stats_visualization/visualizations/personal_performance.py <IGN> <tag_line> --chart champions
+python3 stats_visualization/visualizations/personal_performance.py <IGN> <tag_line> --chart roles
 
 # Specialized analysis (uses legacy player name format)
 python3 stats_visualization/visualizations/objective_analysis.py <player_name>
@@ -74,7 +74,7 @@ python3 stats_visualization/visualizations/graph_first_bloods.py <player_name>
 ```
 
 **NOTE**: Different scripts use different argument formats:
-- `personal_performance.py` requires both `game_name` and `tag_line` (e.g., `Frowtch blue`)
+- `personal_performance.py` requires both `IGN` and `tag_line` (e.g., `Frowtch blue`)
 - Other visualization scripts use single `player_name` argument (e.g., `Frowtch`)
 
 ## Validation Scenarios
@@ -173,7 +173,7 @@ flake8 .
 - Solution: Edit `config.env`, uncomment and set your API token, run `source config.env`
 
 ### "No match data found"  
-- Solution: Run `python3 league.py <game_name> <tag_line> <count>` first to fetch data
+- Solution: Run `python3 league.py <IGN> <tag_line> <count>` first to fetch data
 
 ### Import errors in tests
 - Solution: Ensure you're in the repository root directory when running tests

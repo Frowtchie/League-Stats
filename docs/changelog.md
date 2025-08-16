@@ -1,7 +1,17 @@
 # Changelog
 
 ## [Unreleased]
-- (No changes yet)
+
+## 0.4.0 - 2025-08-16
+### Added
+- Centralized match filtering (ARAM exclusion by default, `--include-aram`, `--queue`, `--ranked-only`, `--modes`) extended to `analyze.py` (parity with visualization scripts).
+- `analyze.py` flag `--generate-visuals` to produce the full visualization suite post textual analysis (with `--no-clean-output` opt-out of initial cleanup).
+- Short flag aliases across CLI (`-i/-p/-t/-m/-d/-l/-n/-f/-X/-a/-q/-R/-M/-g/-O`, plus visualization script equivalents like `-c`, `-D`, `-r`) for faster interactive use.
+
+### Documentation
+- Updated README and CLI reference to include new `analyze.py` filtering flags and examples.
+- Added condensed `cli_cheatsheet.md` for quick flag and command reference.
+- Replaced ambiguous term 'game name' with 'IGN (in-game name)' across CLI help, docs, and examples for clarity.
 
 ## 0.3.0 - 2025-08-16
 - Moved visualization TypedDict models from `stats_visualization/types.py` to `stats_visualization/viz_types.py` (prevents stdlib shadowing when running scripts inside package directory).

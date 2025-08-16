@@ -9,13 +9,25 @@ class _TrendPoint(TypedDict):
 
 
 def plot_performance_trends(
-    player_puuid: str, player_name: str, matches_dir: str = "matches"
+    player_puuid: str,
+    player_name: str,
+    matches_dir: str = "matches",
+    *,
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ):
     """Plot KDA and win rate trends over time for a player.
 
     Uses shared save_figure utility for consistent output handling.
     """
-    matches = load_player_match_data(player_puuid, matches_dir)
+    matches = load_player_match_data(
+        player_puuid,
+        matches_dir,
+        include_aram=include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=game_mode_whitelist,
+    )
     if not matches:
         print(f"No matches found for {player_name}")
         return
@@ -123,11 +135,16 @@ if str(project_root) not in sys.path:
 
 from stats_visualization import league
 from stats_visualization import analyze
-from stats_visualization.utils import save_figure, sanitize_player
+from stats_visualization.utils import save_figure, sanitize_player, filter_matches
 
 
 def load_player_match_data(
-    player_puuid: str, matches_dir: str = "matches"
+    player_puuid: str,
+    matches_dir: str = "matches",
+    *,
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Load match data for a specific player.
@@ -137,7 +154,13 @@ def load_player_match_data(
     Returns:
         list[dict]: List of match data for the player
     """
-    matches: list[dict[str, Any]] = analyze.load_match_files(matches_dir)  # type: ignore[assignment]
+    raw_matches: list[dict[str, Any]] = analyze.load_match_files(matches_dir)  # type: ignore[assignment]
+    matches = filter_matches(
+        raw_matches,
+        include_aram=include_aram,
+        allowed_queue_ids=queue_filter,
+        allowed_game_modes=game_mode_whitelist,
+    )
     player_matches: list[dict[str, Any]] = []
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
@@ -151,12 +174,24 @@ def load_player_match_data(
 
 
 def plot_champion_performance(
-    player_puuid: str, player_name: str, matches_dir: str = "matches"
+    player_puuid: str,
+    player_name: str,
+    matches_dir: str = "matches",
+    *,
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ):
     """
     Plot performance statistics by champion.
     """
-    matches = load_player_match_data(player_puuid, matches_dir)
+    matches = load_player_match_data(
+        player_puuid,
+        matches_dir,
+        include_aram=include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=game_mode_whitelist,
+    )
 
     if not matches:
         print(f"No matches found for {player_name}")
@@ -259,12 +294,24 @@ def plot_champion_performance(
 
 
 def plot_role_performance(
-    player_puuid: str, player_name: str, matches_dir: str = "matches"
+    player_puuid: str,
+    player_name: str,
+    matches_dir: str = "matches",
+    *,
+    include_aram: bool = False,
+    queue_filter: list[int] | None = None,
+    game_mode_whitelist: list[str] | None = None,
 ):
     """
     Plot performance statistics by role/position.
     """
-    matches = load_player_match_data(player_puuid, matches_dir)
+    matches = load_player_match_data(
+        player_puuid,
+        matches_dir,
+        include_aram=include_aram,
+        queue_filter=queue_filter,
+        game_mode_whitelist=game_mode_whitelist,
+    )
 
     role_stats = {}
 
@@ -401,21 +448,56 @@ def main():
         description="Generate personal performance visualizations"
     )
     parser.add_argument(
-        "game_name", type=str, help="The player's game name (e.g., Frowtch)"
+        "game_name", type=str, help="The player's in-game name (IGN) (e.g., Frowtch)"
     )
     parser.add_argument("tag_line", type=str, help="The player's tag line (e.g., blue)")
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
     )
     parser.add_argument(
+        "-c",
         "--chart",
         type=str,
         choices=["trends", "champions", "roles", "all"],
         default="all",
         help="Type of chart to generate",
+    )
+    # Centralized filtering flags (aligned with other visualization scripts)
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches (excluded by default)",
+    )
+    parser.add_argument(
+        "-q",
+        "--queue",
+        type=int,
+        nargs="+",
+        help="Whitelist of queue IDs (e.g. 420 440). If omitted, all queues are considered.",
+    )
+    parser.add_argument(
+        "-R",
+        "--ranked-only",
+        action="store_true",
+        help="Shortcut for --queue 420 440 (solo & flex ranked)",
+    )
+    parser.add_argument(
+        "-M",
+        "--modes",
+        type=str,
+        nargs="+",
+        help="Whitelist of gameMode values (e.g. CLASSIC URF). Applied in addition to other filters.",
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs in output/ (default behavior is to clean)",
     )
 
     args = parser.parse_args()
@@ -451,18 +533,51 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
-    # Generate requested charts
+    from stats_visualization.utils import clean_output
+
+    if not args.no_clean_output:
+        clean_output()
+
+    # Derive queue filter
+    queue_filter = None
+    if args.ranked_only:
+        queue_filter = [420, 440]
+    elif args.queue:
+        queue_filter = args.queue
+
+    # Generate requested charts (pass filtering flags)
     if args.chart == "trends" or args.chart == "all":
         print(f"Generating performance trends for {player_display}...")
-        plot_performance_trends(player_puuid, player_display, matches_dir)
+        plot_performance_trends(
+            player_puuid,
+            player_display,
+            matches_dir,
+            include_aram=args.include_aram,
+            queue_filter=queue_filter,
+            game_mode_whitelist=args.modes,
+        )
 
     if args.chart == "champions" or args.chart == "all":
         print(f"Generating champion performance for {player_display}...")
-        plot_champion_performance(player_puuid, player_display, matches_dir)
+        plot_champion_performance(
+            player_puuid,
+            player_display,
+            matches_dir,
+            include_aram=args.include_aram,
+            queue_filter=queue_filter,
+            game_mode_whitelist=args.modes,
+        )
 
     if args.chart == "roles" or args.chart == "all":
         print(f"Generating role performance for {player_display}...")
-        plot_role_performance(player_puuid, player_display, matches_dir)
+        plot_role_performance(
+            player_puuid,
+            player_display,
+            matches_dir,
+            include_aram=args.include_aram,
+            queue_filter=queue_filter,
+            game_mode_whitelist=args.modes,
+        )
 
 
 if __name__ == "__main__":

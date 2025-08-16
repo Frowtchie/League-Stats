@@ -335,16 +335,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate personal early game and first blood statistics visualization"
     )
-    parser.add_argument("game_name", type=str, help="Riot game name (e.g. frowtch)")
+    parser.add_argument(
+        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
+    )
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
+        "-m",
         "--matches-dir",
         type=str,
         default="matches",
         help="Directory containing match JSON files",
     )
     parser.add_argument(
-        "--role-comparison", action="store_true", help="Show role comparison"
+        "-r", "--role-comparison", action="store_true", help="Show role comparison"
+    )
+    parser.add_argument(
+        "-O",
+        "--no-clean-output",
+        action="store_true",
+        help="Do not delete existing PNGs in output/ (default behavior is to clean)",
     )
 
     args = parser.parse_args()
@@ -378,6 +387,11 @@ def main() -> None:
     if num_matches == 0:
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
+
+    from stats_visualization.utils import clean_output
+
+    if not args.no_clean_output:
+        clean_output()
 
     print(f"Analyzing early game data for {player_display}...")
     early_game_data = extract_early_game_data(player_puuid, matches_dir)

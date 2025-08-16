@@ -4,8 +4,8 @@ A Python application for analyzing personal League of Legends performance from m
 
 ## Version
 
-Current version: **0.2.0**  
-See the [Changelog](docs/changelog.md) for release notes.
+Current version: **0.3.0**  
+See the [Changelog](docs/changelog.md) for release notes (new, unreleased changes are tracked under the Unreleased heading there).
 
 ## Features
 
@@ -72,13 +72,15 @@ RIOT_API_TOKEN=your_api_token_here
 ## Usage
 **Note:** All generated figures and analysis outputs are saved in the `output/` directory. Logs are written to the `logs/` directory.
 
+For a fast flag summary see `docs/cli_cheatsheet.md`.
+
 ### Important: Module Invocation & Type Models Location
 Visualization data models live in `stats_visualization/viz_types.py` (the former `stats_visualization/types.py` was removed to avoid shadowing Python's stdlib `types`).
 
 Preferred execution (ensures correct import resolution):
 
 ```bash
-python -m stats_visualization.league <game_name> <tag_line> <count>
+python -m stats_visualization.league <IGN> <tag_line> <count>
 ```
 
 Update any custom code importing `stats_visualization.types` to instead use:
@@ -90,10 +92,10 @@ from stats_visualization.viz_types import JungleData, KillsData  # etc.
 ### Fetch Match Data
 
 ```bash
-# Fetch last 10 matches (module form preferred)
+# Fetch last 10 matches (module form preferred; IGN + tag)
 python -m stats_visualization.league frowtch blue 10
 
-# Examples with different players
+# Examples with different players (IGN + tag)
 python -m stats_visualization.league Faker T1 5
 python -m stats_visualization.league "Hide on bush" KR1 15
 
@@ -101,50 +103,81 @@ python -m stats_visualization.league "Hide on bush" KR1 15
 python -m stats_visualization.league frowtch blue 5 --log-level DEBUG --no-cache
 ```
 
-**Note**: The script now uses Riot ID (game name + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance.
+**Note**: The script now uses Riot ID (IGN + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance.
 
-### Generate Personal Performance Visualizations
+### Generate Personal Performance & Other Visualizations
+
+All visualization scripts now accept Riot ID (`IGN TAG_LINE`). Most also share centralized filtering flags: `--include-aram`, `--queue <ids>`, `--ranked-only` (alias for solo+flex), and `--modes <gameModes>`.
+
+Output cleanup: Each visualization run now deletes existing PNGs in `output/` by default. Add `--no-clean-output` to retain prior charts.
 
 ```bash
-# Generate comprehensive performance analysis
-python stats_visualization/visualizations/personal_performance.py Frowtch
+# Comprehensive personal performance analysis (all charts)
+python stats_visualization/visualizations/personal_performance.py Frowtch blue
 
-# Generate specific chart types
-python stats_visualization/visualizations/personal_performance.py Frowtch --chart trends
-python stats_visualization/visualizations/personal_performance.py Frowtch --chart champions
-python stats_visualization/visualizations/personal_performance.py Frowtch --chart roles
+# Specific chart types
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --chart trends
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --chart champions
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --chart roles
 
-# Generate objective control analysis
-python stats_visualization/visualizations/objective_analysis.py Frowtch
+# Apply filtering (ranked only, include ARAM override example)
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --ranked-only
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --queue 420 440
+python stats_visualization/visualizations/personal_performance.py Frowtch blue --modes CLASSIC --include-aram
 
-# Generate farming and economy analysis
-python stats_visualization/visualizations/farming_analysis.py Frowtch
+# Objective control analysis (control, first, correlation)
+python stats_visualization/visualizations/objective_analysis.py Frowtch blue --chart all --ranked-only
 
-# Generate jungle clear time analysis (NEW!)
-python stats_visualization/visualizations/jungle_clear_analysis.py Frowtch
+# Farming & economy analysis
+python stats_visualization/visualizations/farming_analysis.py Frowtch blue --chart roles --queue 420
 
-# Generate updated champion-specific charts
-python stats_visualization/visualizations/graph_drakes.py Frowtch
-python stats_visualization/visualizations/graph_barons_heralds.py Frowtch
-python stats_visualization/visualizations/graph_kills.py Frowtch
-python stats_visualization/visualizations/graph_first_bloods.py Frowtch
+# Jungle clear time analysis
+python stats_visualization/visualizations/jungle_clear_analysis.py Frowtch blue --ranked-only
+
+# Dragon / Baron-Herald / Kills / First Blood (with filters)
+python stats_visualization/visualizations/graph_drakes.py Frowtch blue --queue 420 440
+python stats_visualization/visualizations/graph_barons_heralds.py Frowtch blue --queue 420 440
+python stats_visualization/visualizations/graph_kills.py Frowtch blue --ranked-only
+python stats_visualization/visualizations/graph_first_bloods.py Frowtch blue
 ```
 
 
 ### Analyze Match Data
 
+`analyze.py` now supports the same centralized filtering flags as visualization scripts. ARAM matches are excluded by default unless `--include-aram` is passed. You can also restrict by queue IDs (e.g. ranked only) or specific `gameMode` values.
+
+Filtering flags (short / long):
+- `-a / --include-aram` (opt in to ARAM; default is exclude)
+- `-q / --queue 420 440` (whitelist queue IDs; omit to allow all)
+- `-R / --ranked-only` (shortcut for `--queue 420 440`)
+- `-M / --modes CLASSIC` (whitelist `gameMode` values; combine with other filters)
+- `-g / --generate-visuals` (after textual report, produce full visualization suite for the player)
+- `-O / --no-clean-output` (when used with `--generate-visuals`, skip initial output directory cleanup)
+
 ```bash
 # Analyze player performance (recommended, by Riot ID)
-python analyze.py --riot-id Frowtch blue
+python analyze.py -i Frowtch blue
+
+# Include ARAM and restrict to specific game modes
+python analyze.py -i Frowtch blue -a -M CLASSIC CHERRY
+
+# Ranked only (solo + flex) using shortcut
+python analyze.py -i Frowtch blue -R
+
+# Explicit queue filter (same effect as --ranked-only)
+python analyze.py -i Frowtch blue -q 420 440
+
+# Combine queue and mode filters (logical AND)
+python analyze.py -i Frowtch blue -q 420 440 -M CLASSIC
 
 # Analyze player performance (legacy mode, by config name)
 python analyze.py --player Frowtch
 
-# Team-wide analysis across all matches
-python analyze.py --team-analysis
+# Team-wide (aggregate) analysis across all matches (applies filters too)
+python analyze.py --team-analysis --ranked-only
 
-# Analyze matches from custom directory
-python analyze.py --riot-id Frowtch blue --matches-dir custom_matches/
+# Analyze matches from custom directory with filters
+python analyze.py -i Frowtch blue -m custom_matches/ -q 420
 ```
 
 ## Configuration
@@ -153,7 +186,7 @@ python analyze.py --riot-id Frowtch blue --matches-dir custom_matches/
 
 - `RIOT_API_TOKEN` (required): Your Riot Games API token
 
-**Note**: With the new Riot ID-based player lookup, you no longer need to configure individual player PUUIDs. The script will automatically fetch PUUIDs using the Riot API when you provide a game name and tag line.
+**Note**: With the new Riot ID-based player lookup, you no longer need to configure individual player PUUIDs. The script will automatically fetch PUUIDs using the Riot API when you provide an IGN and tag line.
 
 **No need to source config.env manually:** All scripts automatically load environment variables from `config.env`.
 
@@ -183,7 +216,7 @@ RIOT_API_TOKEN=your_api_key_here
 ### Finding Player Information
 
 To use this tool, you only need a player's **Riot ID**, which consists of:
-- **Game Name**: The display name (e.g., "Faker", "Hide on bush")  
+- **IGN (In‑Game Name)**: The display name (e.g., "Faker", "Hide on bush")  
 - **Tag Line**: The identifier after the # symbol (e.g., "T1", "KR1")
 
 You can find this information:
