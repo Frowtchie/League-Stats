@@ -72,18 +72,33 @@ RIOT_API_TOKEN=your_api_token_here
 ## Usage
 **Note:** All generated figures and analysis outputs are saved in the `output/` directory. Logs are written to the `logs/` directory.
 
+### Important: Module Invocation & Type Models Location
+Visualization data models live in `stats_visualization/viz_types.py` (the former `stats_visualization/types.py` was removed to avoid shadowing Python's stdlib `types`).
+
+Preferred execution (ensures correct import resolution):
+
+```bash
+python -m stats_visualization.league <game_name> <tag_line> <count>
+```
+
+Update any custom code importing `stats_visualization.types` to instead use:
+
+```python
+from stats_visualization.viz_types import JungleData, KillsData  # etc.
+```
+
 ### Fetch Match Data
 
 ```bash
-# Fetch last 10 matches for a player by their Riot ID (game name + tag)
-python league.py frowtch blue 10
+# Fetch last 10 matches (module form preferred)
+python -m stats_visualization.league frowtch blue 10
 
 # Examples with different players
-python league.py Faker T1 5
-python league.py Hide on bush KR1 15
+python -m stats_visualization.league Faker T1 5
+python -m stats_visualization.league "Hide on bush" KR1 15
 
 # With debug logging and no cache
-python league.py frowtch blue 5 --log-level DEBUG --no-cache
+python -m stats_visualization.league frowtch blue 5 --log-level DEBUG --no-cache
 ```
 
 **Note**: The script now uses Riot ID (game name + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance.
