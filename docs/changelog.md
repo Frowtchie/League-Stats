@@ -1,6 +1,17 @@
 # Changelog
 
 ## [Unreleased]
+### Planned for 0.5.0 (Draft)
+- Performance: Optional async/batched Riot API fetches; lightweight caching metrics.
+- Data Quality: Validation report for missing timeline segments & selective refetch.
+- New Visualizations: Role impact (gold/xp share), damage composition, lane phase CS diff, objective participation heatmap.
+- Configuration: Central `player_config.yml` supporting multiple profiles + aliases.
+- CLI UX: Progress bars for fetch, colored summaries, `--json` output option.
+- Packaging: PyPI-ready (`pyproject.toml`), console scripts entry points.
+- Extensibility: Plugin discovery via entry points for custom visualizations.
+- CI: GitHub Actions workflow (lint, tests, mypy, coverage badge).
+- Docs: Add glossary (IGN, Riot ID, PUUID, Queue ID) & updated architecture diagram.
+- Reliability: Smarter rate limit backoff with jitter & structured log events.
 
 ## 0.4.0 - 2025-08-16
 ### Added
