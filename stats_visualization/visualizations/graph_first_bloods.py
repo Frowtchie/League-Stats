@@ -14,15 +14,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from dotenv import load_dotenv
-
-
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import EarlyGameData
+from collections import defaultdict
 
-# Load environment variables from config.env if present
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -239,8 +236,6 @@ def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGame
     """
     Compare early game performance across different roles.
     """
-    from collections import defaultdict
-
     role_data = defaultdict(lambda: {"kills": [], "deaths": [], "cs": [], "games": 0})
 
     for role, kills, deaths, cs in zip(
@@ -259,7 +254,7 @@ def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGame
     filtered_roles = {role: data for role, data in role_data.items() if data["games"] >= 2}
 
     if not filtered_roles:
-        print(f"No roles with enough games for comparison")
+        print(f"No roles with enough games for comparison: {len(filtered_roles)}")
         return
 
     role_names = list(filtered_roles.keys())

@@ -9,15 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import TypedDict, Optional, Any
 from dotenv import load_dotenv
-
-
-# Add parent directory to path for imports
-sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.utils import save_figure, sanitize_player, filter_matches
 
-# Load environment variables from config.env if present
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -125,37 +121,7 @@ def plot_performance_trends(
     plt.show()
 
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Personal performance visualization module for League of Legends match data.
-Creates charts and graphs for individual player analysis.
-"""
-
-import matplotlib.pyplot as plt
-import numpy as np
-from typing import Any
-import argparse
-import sys
-import os
-import requests
-
-# Load environment variables from config.env if present
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path="config.env")
-
-# Ensure project root is in sys.path for module imports
-import pathlib
-
-project_root = pathlib.Path(__file__).resolve().parent.parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-from stats_visualization import league
-from stats_visualization import analyze
-from stats_visualization.utils import save_figure, sanitize_player, filter_matches
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))  # noqa: E402
 
 
 def load_player_match_data(

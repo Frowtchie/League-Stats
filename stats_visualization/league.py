@@ -1,4 +1,5 @@
-"""
+"""League match data fetcher.
+
 Fetches data from the Riot Games API for a list of matches and saves the data as JSON files.
 -----------------------------------------------------------------
 Author: Frowtch
@@ -9,6 +10,22 @@ Contact: Frowtch#0001 on Discord
 Status: Production
 """
 
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import requests
+from dotenv import load_dotenv
+
+# Load environment variables from config.env if present
+load_dotenv(dotenv_path="config.env")
+
 
 def ensure_matches_for_player(
     puuid: str,
@@ -17,78 +34,41 @@ def ensure_matches_for_player(
     min_matches: int = 1,
     fetch_count: int = 10,
 ) -> int:
+    """Ensure at least ``min_matches`` for the given player exist locally.
+
+    If fewer than ``min_matches`` are present, fetch up to ``fetch_count`` new
+    matches (uncached) and then recount.
     """
-    Ensure there are at least `min_matches` match files for the given player in the directory.
-    If not, fetch up to `fetch_count` matches and save them.
-
-    Args:
-        puuid (str): Player's PUUID
-        token (str): Riot API token
-        matches_dir (str): Directory to store match files
-        min_matches (int): Minimum number of matches required
-        fetch_count (int): Number of matches to fetch if needed
-
-    Returns:
-        int: Number of match files now present for the player
-    """
-    from pathlib import Path
-
-    # import glob  # Removed unused import
 
     matches_path = Path(matches_dir)
     matches_path.mkdir(exist_ok=True)
-    # Count files containing this puuid (or just count all if not filtering by puuid)
-    match_files = list(matches_path.glob("*.json"))
-    player_match_count = 0
-    for file in match_files:
-        try:
-            with open(file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            # Check if player is in this match
-            if any(p.get("puuid") == puuid for p in data.get("info", {}).get("participants", [])):
-                player_match_count += 1
-        except Exception:
-            continue
+
+    def _count_player_matches() -> int:
+        count = 0
+        for file in matches_path.glob("*.json"):
+            try:
+                with open(file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if any(
+                    p.get("puuid") == puuid for p in data.get("info", {}).get("participants", [])
+                ):
+                    count += 1
+            except Exception:  # pragma: no cover - defensive
+                continue
+        return count
+
+    player_match_count = _count_player_matches()
     if player_match_count >= min_matches:
         return player_match_count
-    # Fetch and save matches
+
     logger.info(
-        f"No or not enough matches found for player {puuid[:10]}. "
-        f"Fetching {fetch_count} matches..."
+        "No or not enough matches found for player %s. Fetching %d matches...",
+        puuid[:10],
+        fetch_count,
     )
     match_ids = fetch_match_history(puuid, fetch_count, token)
     process_matches(match_ids, token, use_cache=False)
-    # Recount
-    match_files = list(matches_path.glob("*.json"))
-    player_match_count = 0
-    for file in match_files:
-        try:
-            with open(file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            if any(p.get("puuid") == puuid for p in data.get("info", {}).get("participants", [])):
-                player_match_count += 1
-        except Exception:
-            continue
-
-    return player_match_count
-
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
-import json
-import os
-import argparse
-import logging
-import sys
-from typing import List, Dict, Optional, Any
-import requests
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load environment variables from config.env if present
-load_dotenv(dotenv_path="config.env")
+    return _count_player_matches()
 
 
 # Constants

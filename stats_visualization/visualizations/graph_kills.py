@@ -12,10 +12,18 @@ import sys
 import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
-
-# Suppress MatplotlibDeprecationWarning for 'labels' in boxplot (Matplotlib >=3.9)
+import numpy as np
+from typing import Dict, Optional, List
+import datetime
+from dotenv import load_dotenv
 import warnings
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.viz_types import KillsData, ChampionStats
+from stats_visualization.utils import filter_matches, save_figure, sanitize_player
 
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
+# Suppress MatplotlibDeprecationWarning for 'labels' in boxplot (Matplotlib >=3.9)
 try:
     from matplotlib import MatplotlibDeprecationWarning
 except ImportError:
@@ -24,27 +32,11 @@ warnings.filterwarnings(
     "ignore",
     category=MatplotlibDeprecationWarning,
 )
-# Suppress MatplotlibDeprecationWarning for 'labels' in boxplot (Matplotlib >=3.9)
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
     message=r"The 'labels' parameter of boxplot\(\) has been renamed 'tick_labels' since Matplotlib 3.9; support for the old name will be dropped in 3.11.",
 )
-import numpy as np
-from typing import Dict, Optional, List
-import datetime  # noqa: F401
-import datetime
-from dotenv import load_dotenv
-
-
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
-from stats_visualization import league
-from stats_visualization import analyze
-from stats_visualization.viz_types import KillsData, ChampionStats
-from stats_visualization.utils import filter_matches, save_figure, sanitize_player
-
-# Load environment variables from config.env if present
 load_dotenv(dotenv_path="config.env")
 
 
@@ -224,12 +216,6 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
     win_kills = [k for k, w in zip(kills_data["kills"], kills_data["wins"]) if w]
     loss_kills = [k for k, w in zip(kills_data["kills"], kills_data["wins"]) if not w]
     # Retained for potential future use (e.g., deeper outcome-based KDA comparison)
-    win_kda = [
-        kda for kda, w in zip(kills_data["kda_ratios"], kills_data["wins"]) if w
-    ]  # noqa: F841
-    loss_kda = [
-        kda for kda, w in zip(kills_data["kda_ratios"], kills_data["wins"]) if not w
-    ]  # noqa: F841
 
     # Box plot comparison
     data_to_plot = []
@@ -268,8 +254,6 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
         return
 
     # Champion performance analysis
-    from collections import defaultdict
-
     champion_stats: Dict[str, ChampionStats] = defaultdict(
         lambda: {"kills": [], "deaths": [], "assists": [], "kda": [], "games": 0}
     )
@@ -287,7 +271,7 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
     }
 
     if not filtered_champions:
-        print(f"No champions with enough games for detailed analysis")
+        print(f"No champions with enough games for detailed analysis: {len(filtered_champions)}")
         return
 
     # Get top 6 most played champions

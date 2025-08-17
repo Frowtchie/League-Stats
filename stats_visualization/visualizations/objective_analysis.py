@@ -11,16 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Optional
 from dotenv import load_dotenv
-
-
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import ObjectiveData
 from stats_visualization.utils import filter_matches
 
-# Load environment variables from config.env if present
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -211,8 +207,6 @@ def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> N
             )
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"objective_control_{sanitize_player(player_name)}",
@@ -262,8 +256,6 @@ def plot_first_objectives(player_name: str, objective_data: ObjectiveData) -> No
 
     plt.xticks(rotation=45)
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"first_objectives_{sanitize_player(player_name)}",
@@ -424,9 +416,9 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
-    from stats_visualization.utils import clean_output
-
     if not args.no_clean_output:
+        from stats_visualization.utils import clean_output
+
         clean_output()
 
     print(f"Analyzing objective data for {player_display}...")

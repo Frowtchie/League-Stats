@@ -5,20 +5,19 @@
 Personal baron and herald statistics visualization for League of Legends match data.
 Analyzes baron and rift herald control from personal match history.
 """
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
-from stats_visualization import league, analyze
-from stats_visualization.viz_types import BaronHeraldData
-from stats_visualization.utils import filter_matches
 import os
+import sys
 import argparse
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Optional, List
 from dotenv import load_dotenv
+from stats_visualization import league, analyze
+from stats_visualization.viz_types import BaronHeraldData
+from stats_visualization.utils import filter_matches, save_figure, sanitize_player
 
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -245,8 +244,6 @@ def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData
             )
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"barons_heralds_{sanitize_player(player_name)}",
@@ -329,9 +326,9 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
-    from stats_visualization.utils import clean_output
-
     if not args.no_clean_output:
+        from stats_visualization.utils import clean_output
+
         clean_output()
 
     print(f"Analyzing baron and herald data for {player_display}...")

@@ -5,21 +5,20 @@
 Farming and economy analysis visualization module for League of Legends match data.
 Analyzes CS per minute, gold efficiency, and economic performance.
 """
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
-from stats_visualization import league, analyze
-from stats_visualization.viz_types import EconomyData
-from stats_visualization.utils import filter_matches
 import os
+import sys
 import argparse
+from pathlib import Path
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 from dotenv import load_dotenv
 from typing import Optional, List
+from stats_visualization import league, analyze
+from stats_visualization.viz_types import EconomyData
+from stats_visualization.utils import filter_matches, save_figure, sanitize_player
 
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -224,8 +223,6 @@ def plot_farming_performance(player_name: str, economy_data: EconomyData) -> Non
         )
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"farming_performance_{sanitize_player(player_name)}",
@@ -318,8 +315,6 @@ def plot_gold_efficiency(player_name: str, economy_data: EconomyData) -> None:
     ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"gold_efficiency_{sanitize_player(player_name)}",
@@ -420,8 +415,6 @@ def plot_role_economy_comparison(player_name: str, economy_data: EconomyData) ->
         )
 
     plt.tight_layout()
-    from stats_visualization.utils import save_figure, sanitize_player
-
     save_figure(
         fig,
         f"role_economy_{sanitize_player(player_name)}",

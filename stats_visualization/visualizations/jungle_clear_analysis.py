@@ -16,16 +16,12 @@ import numpy as np
 from typing import Dict, Any, Optional, List, Union
 from collections import defaultdict
 from dotenv import load_dotenv
-
-
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import JungleData
 from stats_visualization.utils import filter_matches
 
-# Load environment variables from config.env if present
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
@@ -150,23 +146,18 @@ def calculate_clear_time_from_timeline(
         return None
 
     # Track jungle monster kills for this participant
-    jungle_kills = []
+    jungle_kills: List[Dict[str, Any]] = []
     frames = timeline.get("frames", [])
 
     for frame in frames:
         timestamp = frame.get("timestamp", 0) / 1000 / 60  # Convert to minutes
-
-        # Check events in this frame
         for event in frame.get("events", []):
             if (
-                event.get("type") == "ELITE_MONSTER_KILL"
-                or event.get("type") == "NEUTRAL_MONSTER_KILL"
+                event.get("type") in {"ELITE_MONSTER_KILL", "NEUTRAL_MONSTER_KILL"}
+                and event.get("killerId") == participant_id
             ):
-
-                killer_id = event.get("killerId")
-                if killer_id == participant_id:
-                    monster_type = event.get("monsterType", "")
-                    jungle_kills.append({"timestamp": timestamp, "monster_type": monster_type})
+                monster_type = event.get("monsterType", "")
+                jungle_kills.append({"timestamp": timestamp, "monster_type": monster_type})
 
     # Determine if a full clear was completed
     # Look for key jungle monsters: Blue, Red, Gromp, Krugs, Raptors, Wolves
@@ -183,7 +174,7 @@ def calculate_clear_time_from_timeline(
     return None
 
 
-def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
+def estimate_clear_time_from_stats(player_data: Dict[str, Any]) -> Optional[float]:
     """
     Estimate clear time based on champion and performance stats.
 
@@ -223,9 +214,6 @@ def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
         base_time += 0.3
 
     return base_time
-
-
-from stats_visualization.viz_types import JungleData
 
 
 def plot_jungle_clear_analysis(player_name: str, jungle_data: Union[JungleData, Dict[str, Any]]):
@@ -539,9 +527,9 @@ def main():
         print(f"Failed to fetch or find any matches for {player_display}.")
         return
 
-    from stats_visualization.utils import clean_output
-
     if not args.no_clean_output:
+        from stats_visualization.utils import clean_output
+
         clean_output()
 
     print(f"Analyzing jungle clear times for {player_display}...")
