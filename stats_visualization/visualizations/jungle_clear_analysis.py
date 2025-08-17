@@ -28,8 +28,8 @@ def extract_jungle_clear_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[List[int]] = None,
+    game_mode_whitelist: Optional[List[str]] = None,
 ) -> JungleData:
     """
     Extract jungle clear time data for a specific player.

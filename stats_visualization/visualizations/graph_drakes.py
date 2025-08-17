@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import argparse
-from typing import Optional
+from typing import Optional, List
 import sys
 
 # Load environment variables from config.env if present
@@ -31,8 +31,8 @@ def extract_drake_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: Optional[list[int]] = None,
-    game_mode_whitelist: Optional[list[str]] = None,
+    queue_filter: Optional[List[int]] = None,
+    game_mode_whitelist: Optional[List[str]] = None,
 ) -> DrakeData:
     """
     Extract drake-related data for a specific player from match history.

@@ -9,7 +9,7 @@ Analyzes kill performance and progression from personal match history.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import datetime  # noqa: F401
 
 import argparse
@@ -35,8 +35,8 @@ def extract_kills_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: Optional[list[int]] = None,
-    game_mode_whitelist: Optional[list[str]] = None,
+    queue_filter: Optional[List[int]] = None,
+    game_mode_whitelist: Optional[List[str]] = None,
 ) -> KillsData:
     """
     Extract kills data for a specific player from match history.
