@@ -6,23 +6,24 @@ Personal first blood statistics visualization for League of Legends match data.
 Analyzes early game performance and first blood statistics from personal match history.
 """
 
+
+import os
+import sys
+import argparse
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
-import argparse
-import sys
-import os
-
-# Load environment variables from config.env if present
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import EarlyGameData
+
+# Load environment variables from config.env if present
+load_dotenv(dotenv_path="config.env")
 
 
 def extract_early_game_data(player_puuid: str, matches_dir: str = "matches") -> EarlyGameData:

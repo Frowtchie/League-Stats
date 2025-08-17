@@ -69,22 +69,12 @@ def ensure_matches_for_player(
                 player_match_count += 1
         except Exception:
             continue
+
     return player_match_count
 
 
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-"""
-Fetches data from the Riot Games API for a list of matches and saves the data as JSON files.
------------------------------------------------------------------
-Author: Frowtch
-License: MPL 2.0
-Version: 1.1.0
-Maintainer: Frowtch
-Contact: Frowtch#0001 on Discord
-Status: Production
-"""
 
 
 import json
@@ -92,14 +82,12 @@ import os
 import argparse
 import logging
 import sys
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import requests
 from pathlib import Path
-
-
-# Load environment variables from config.env if present
 from dotenv import load_dotenv
 
+# Load environment variables from config.env if present
 load_dotenv(dotenv_path="config.env")
 
 
@@ -119,6 +107,8 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
+
+# Module-level logger for this file
 logger = logging.getLogger(__name__)
 
 
@@ -140,9 +130,6 @@ def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30):
     response = requests.get(url, headers=headers, timeout=timeout)
     response.raise_for_status()
     return response
-
-
-from typing import Any
 
 
 def validate_match_data(data: Dict[str, Any]) -> bool:

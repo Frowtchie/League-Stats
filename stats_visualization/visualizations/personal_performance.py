@@ -1,6 +1,24 @@
 from __future__ import annotations
 
-from typing import TypedDict, Optional
+import os
+import sys
+import argparse
+import pathlib
+import requests
+import matplotlib.pyplot as plt
+import numpy as np
+from typing import TypedDict, Optional, Any
+from dotenv import load_dotenv
+
+
+# Add parent directory to path for imports
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))  # noqa: E402
+from stats_visualization import league
+from stats_visualization import analyze
+from stats_visualization.utils import save_figure, sanitize_player, filter_matches
+
+# Load environment variables from config.env if present
+load_dotenv(dotenv_path="config.env")
 
 
 class _TrendPoint(TypedDict):

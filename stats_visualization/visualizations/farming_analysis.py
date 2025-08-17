@@ -5,29 +5,22 @@
 Farming and economy analysis visualization module for League of Legends match data.
 Analyzes CS per minute, gold efficiency, and economic performance.
 """
+import sys
+from pathlib import Path
 
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
+from stats_visualization import league, analyze
+from stats_visualization.viz_types import EconomyData
+from stats_visualization.utils import filter_matches
 import os
+import argparse
+from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
-from collections import defaultdict
-import argparse
-import sys
-
-# Load environment variables from config.env if present
 from dotenv import load_dotenv
 from typing import Optional, List
 
 load_dotenv(dotenv_path="config.env")
-
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
-from stats_visualization import league
-from stats_visualization import analyze
-
-
-from stats_visualization.viz_types import EconomyData
-from stats_visualization.utils import filter_matches
 
 
 def extract_economy_data(

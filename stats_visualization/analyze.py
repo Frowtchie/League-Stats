@@ -241,26 +241,26 @@ def print_player_report(stats: Dict[str, Any], player_name: str):
     print(f"PLAYER PERFORMANCE REPORT: {player_name}")
     print(f"{'='*50}")
 
-    print(f"\n📊 Overall Performance:")
+    print("\n📊 Overall Performance:")
     print(f"   Total Games: {stats['total_games']}")
     print(f"   Wins: {stats['wins']} | Losses: {stats['losses']}")
     print(f"   Win Rate: {stats.get('win_rate', 0):.1%}")
 
-    print(f"\n⚔️ Combat Stats:")
+    print("\n⚔️ Combat Stats:")
     print(
         f"   Total K/D/A: {stats['total_kills']}/{stats['total_deaths']}/{stats['total_assists']}"
     )
     print(f"   Average KDA: {stats.get('average_kda', 0):.2f}")
 
-    print(f"\n🏆 Champions (Top 5):")
+    print("\n🏆 Champions (Top 5):")
     for champion, count in stats["champions_played"].most_common(5):
         print(f"   {champion}: {count} games")
 
-    print(f"\n🎯 Preferred Roles:")
+    print("\n🎯 Preferred Roles:")
     for role, count in stats["roles_played"].most_common():
         print(f"   {role}: {count} games")
 
-    print(f"\n💰 Performance Metrics:")
+    print("\n💰 Performance Metrics:")
     print(f"   Average Damage: {stats.get('average_damage', 0):,.0f}")
     print(f"   Average Gold: {stats.get('average_gold', 0):,.0f}")
     avg_duration = stats.get("average_game_duration", 0)
@@ -269,21 +269,21 @@ def print_player_report(stats: Dict[str, Any], player_name: str):
 
 def print_team_report(stats: Dict[str, Any]):
     """Print a formatted team performance report."""
-    print(f"\n{'='*50}")
-    print(f"TEAM PERFORMANCE ANALYSIS")
-    print(f"{'='*50}")
+    print("\n" + "=" * 50)
+    print("TEAM PERFORMANCE ANALYSIS")
+    print("=" * 50)
 
-    print(f"\n📈 Match Overview:")
+    print("\n📈 Match Overview:")
     print(f"   Total Matches Analyzed: {stats['total_matches']}")
     print(
-        f"   Average Game Duration: {stats['average_duration']//60:.0f}m {stats['average_duration']%60:.0f}s"
+        f"   Average Game Duration: {stats['average_duration']//60:.0f}m {stats['average_duration'] % 60:.0f}s"
     )
 
-    print(f"\n🎮 Game Modes:")
+    print("\n🎮 Game Modes:")
     for mode, count in stats["game_modes"].most_common():
         print(f"   {mode}: {count} matches")
 
-    print(f"\n🏹 Objectives Per Game (Average):")
+    print("\n🏹 Objectives Per Game (Average):")
     for obj_type, data in stats["objectives"].items():
         print(f"   {obj_type.title()}: {data['avg_per_game']:.1f}")
 
@@ -383,13 +383,19 @@ def main():
         "-g",
         "--generate-visuals",
         action="store_true",
-        help="After analysis, generate all visualization charts (drakes, barons/heralds, kills, farming, jungle clear, objectives, personal performance).",
+        help=(
+            "After analysis, generate all visualization charts (drakes, barons/heralds, kills, "
+            "farming, jungle clear, objectives, personal performance)."
+        ),
     )
     parser.add_argument(
         "-O",
         "--no-clean-output",
         action="store_true",
-        help="Do not delete existing PNGs before generating visuals when --generate-visuals is used (default is to clean).",
+        help=(
+            "Do not delete existing PNGs before generating visuals when --generate-visuals is used "
+            "(default is to clean)."
+        ),
     )
     args = parser.parse_args()
 
@@ -527,11 +533,14 @@ def main():
                         delta_player = new_player_matches - prev_player_matches
                         delta_files = new_total_files - prev_total_files
                         print(
-                            f"\n✅ Fetch complete in {duration:.1f}s: player matches {prev_player_matches} -> {new_player_matches} (+{delta_player}); files {prev_total_files} -> {new_total_files} (+{delta_files})."
+                            f"\n✅ Fetch complete in {duration:.1f}s: player matches {prev_player_matches} -> "
+                            f"{new_player_matches} (+{delta_player}); files {prev_total_files} -> "
+                            f"{new_total_files} (+{delta_files})."
                         )
                         if new_player_matches < args.min_matches:
                             print(
-                                f"⚠️ Still below desired minimum ({new_player_matches} < {args.min_matches}). Consider increasing --fetch-count and re-running."
+                                f"⚠️ Still below desired minimum ({new_player_matches} < {args.min_matches}). "
+                                f"Consider increasing --fetch-count and re-running."
                             )
                         elif delta_player == 0:
                             print("ℹ️ No new matches involving this player were added.")
@@ -599,7 +608,7 @@ def generate_all_visuals(
         clean: If True, remove existing PNGs before generation
         matches_dir: Directory with match JSONs
     """
-    from stats_visualization.utils import clean_output, sanitize_player, save_figure  # type: ignore
+    from stats_visualization.utils import clean_output  # type: ignore
 
     print("\n=== Generating visualization suite ===")
     if clean:

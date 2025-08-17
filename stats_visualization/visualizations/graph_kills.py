@@ -6,29 +6,28 @@ Personal kills statistics visualization for League of Legends match data.
 Analyzes kill performance and progression from personal match history.
 """
 
+
+import os
+import sys
+import argparse
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 from typing import Dict, Optional, List
 import datetime  # noqa: F401
-
-import argparse
-import sys
 import datetime
-import os
-
-# Load environment variables from config.env if present
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="config.env")
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import KillsData, ChampionStats
-from stats_visualization.utils import filter_matches
-from stats_visualization.utils import save_figure, sanitize_player
+from stats_visualization.utils import filter_matches, save_figure, sanitize_player
+
+# Load environment variables from config.env if present
+load_dotenv(dotenv_path="config.env")
 
 
 def extract_kills_data(
@@ -226,7 +225,7 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
         labels.append(f"Losses\n({len(loss_kills)} games)")
 
     if data_to_plot:
-        bp = ax4.boxplot(data_to_plot, labels=labels, patch_artist=True)
+        bp = ax4.boxplot(data_to_plot, tick_labels=labels, patch_artist=True)
         colors = ["lightgreen", "lightcoral"]
         for patch, color in zip(bp["boxes"], colors[: len(bp["boxes"])]):
             patch.set_facecolor(color)
@@ -304,7 +303,7 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
 
     # Kill distribution by champion (box plot)
     champion_kills = [top_champions[champ]["kills"] for champ in champions]
-    bp = ax2.boxplot(champion_kills, labels=champions, patch_artist=True)
+    bp = ax2.boxplot(champion_kills, tick_labels=champions, patch_artist=True)
 
     colors = plt.cm.Set3(np.linspace(0, 1, len(champions)))
     for patch, color in zip(bp["boxes"], colors):

@@ -6,22 +6,27 @@ Jungle clear time analysis visualization module for League of Legends match data
 Analyzes first jungle clear times for jungle role games using timeline data.
 """
 
+
+import os
+import sys
+import argparse
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 from collections import defaultdict
-import argparse
-import sys
-import os
+from dotenv import load_dotenv
+
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
-
+sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import JungleData
 from stats_visualization.utils import filter_matches
+
+# Load environment variables from config.env if present
+load_dotenv(dotenv_path="config.env")
 
 
 def extract_jungle_clear_data(

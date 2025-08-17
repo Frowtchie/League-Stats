@@ -63,7 +63,8 @@ def filter_matches(
             continue
         if q_set is not None and info.get("queueId") not in q_set:
             print(
-                f"[DEBUG][filter_matches] Skipping match: queueId {info.get('queueId')} not in allowed set {q_set}: {info}"
+                f"[DEBUG][filter_matches] Skipping match: queueId {info.get('queueId')} "
+                f"not in allowed set {q_set}: {info}"
             )
             continue
         if gm_set is not None and game_mode not in gm_set:
