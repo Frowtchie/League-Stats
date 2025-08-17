@@ -9,7 +9,7 @@ Analyzes first jungle clear times for jungle role games using timeline data.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from collections import defaultdict
 import argparse
 import sys
@@ -223,7 +223,7 @@ def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
 from stats_visualization.viz_types import JungleData
 
 
-def plot_jungle_clear_analysis(player_name: str, jungle_data: JungleData | Dict[str, Any]):
+def plot_jungle_clear_analysis(player_name: str, jungle_data: Union[JungleData, Dict[str, Any]]):
     """
     Create comprehensive jungle clear time visualizations.
 
