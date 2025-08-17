@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Kills statistics visualization.
+
+Simplified and strongly typed extraction to keep static type checker happy
+without over-complicating the logic.
 """
-Personal kills statistics visualization for League of Legends match data.
-Analyzes kill performance and progression from personal match history.
-"""
+from __future__ import annotations
 
 
 import os
@@ -13,31 +15,36 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any, cast, Type, TypedDict
 import datetime
 from dotenv import load_dotenv
 import warnings
+from collections import defaultdict
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import KillsData, ChampionStats
 from stats_visualization.utils import filter_matches, save_figure, sanitize_player
 
 sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
-# Suppress MatplotlibDeprecationWarning for 'labels' in boxplot (Matplotlib >=3.9)
+
 try:
-    from matplotlib import MatplotlibDeprecationWarning
-except ImportError:
+    from matplotlib import MatplotlibDeprecationWarning as _MDW
+
+    MatplotlibDeprecationWarning = cast(Type[Warning], _MDW)
+except Exception:  # pragma: no cover - fallback
     MatplotlibDeprecationWarning = UserWarning
-warnings.filterwarnings(
-    "ignore",
-    category=MatplotlibDeprecationWarning,
-)
-warnings.filterwarnings(
-    "ignore",
-    category=UserWarning,
-    message=r"The 'labels' parameter of boxplot\(\) has been renamed 'tick_labels' since Matplotlib 3.9; support for the old name will be dropped in 3.11.",
-)
-load_dotenv(dotenv_path="config.env")
+warnings.filterwarnings("ignore", category=MatplotlibDeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
+
+class _Participant(TypedDict, total=False):
+    puuid: str
+    teamId: int
+    kills: int
+    deaths: int
+    assists: int
+    championName: str
+    win: bool
 
 
 def extract_kills_data(
@@ -47,26 +54,14 @@ def extract_kills_data(
     queue_filter: Optional[List[int]] = None,
     game_mode_whitelist: Optional[List[str]] = None,
 ) -> KillsData:
-    """
-    Extract kills data for a specific player from match history.
-
-    Args:
-        player_puuid (str): PUUID of the player
-        matches_dir (str): Directory containing match JSON files
-
-    Returns:
-        Dict containing kills statistics
-    """
-    print(f"[DEBUG] extract_kills_data called with player_puuid={player_puuid}")
+    """Extract kills-related data for a specific player from match history."""
     raw_matches = analyze.load_match_files(matches_dir)
-    print(f"[DEBUG] [extract_kills_data] raw_matches loaded: {raw_matches}")
     matches = filter_matches(
         raw_matches,
         include_aram=include_aram,
         allowed_queue_ids=queue_filter,
         allowed_game_modes=game_mode_whitelist,
     )
-    print(f"[DEBUG] [extract_kills_data] matches after filter: {matches}")
     kills_data: KillsData = {
         "kills": [],
         "deaths": [],
@@ -79,63 +74,54 @@ def extract_kills_data(
         "wins": [],
         "total_games": 0,
     }
-    for match in matches:
-        print(f"[DEBUG] processing match: {match}")
 
-    # Always return kills_data, even if matches is empty
     for match in matches:
-        if "info" not in match or "participants" not in match["info"]:
+        info_raw = match.get("info")
+        if not isinstance(info_raw, dict):
             continue
-        player_data = None
-        for participant in match["info"]["participants"]:
-            if participant.get("puuid") == player_puuid:
-                player_data = participant
+        participants_raw = info_raw.get("participants")
+        if not isinstance(participants_raw, list):
+            continue
+        participants: List[_Participant] = [
+            cast(_Participant, p) for p in participants_raw if isinstance(p, dict)
+        ]
+        player: Optional[_Participant] = None
+        for part in participants:
+            if part.get("puuid") == player_puuid:
+                player = part
                 break
-        if not player_data:
+        if player is None:
             continue
         kills_data["total_games"] += 1
-        game_creation = match["info"].get("gameCreation", 0)
-        if game_creation > 0:
-            game_date = datetime.datetime.fromtimestamp(game_creation / 1000)
-            kills_data["game_dates"].append(game_date)
+        gc_val = info_raw.get("gameCreation", 0)
+        if isinstance(gc_val, (int, float)) and gc_val > 0:
+            kills_data["game_dates"].append(datetime.datetime.fromtimestamp(float(gc_val) / 1000))
         else:
             kills_data["game_dates"].append(datetime.datetime.now())
-        game_duration = match["info"].get("gameDuration", 0)
-        kills_data["game_durations"].append(game_duration / 60)
-        kills = player_data.get("kills", 0)
-        deaths = player_data.get("deaths", 0)
-        assists = player_data.get("assists", 0)
+        gd_val = info_raw.get("gameDuration", 0)
+        if isinstance(gd_val, (int, float)):
+            kills_data["game_durations"].append(float(gd_val) / 60.0)
+        else:
+            kills_data["game_durations"].append(0.0)
+        kills = int(player.get("kills", 0))
+        deaths = int(player.get("deaths", 0))
+        assists = int(player.get("assists", 0))
         kills_data["kills"].append(kills)
         kills_data["deaths"].append(deaths)
         kills_data["assists"].append(assists)
         kda = (kills + assists) / max(deaths, 1)
-        kills_data["kda_ratios"].append(kda)
+        kills_data["kda_ratios"].append(float(kda))
         team_kills = 0
-        player_team_id = player_data.get("teamId")
-        if "participants" in match["info"]:
-            for participant in match["info"]["participants"]:
-                if participant.get("teamId") == player_team_id:
-                    team_kills += participant.get("kills", 0)
-        kill_participation = (kills + assists) / max(team_kills, 1) * 100
-        kills_data["kill_participation"].append(kill_participation)
-        kills_data["champions"].append(player_data.get("championName", "Unknown"))
-        kills_data["wins"].append(player_data.get("win", False))
-    for key in [
-        "kills",
-        "deaths",
-        "assists",
-        "kda_ratios",
-        "kill_participation",
-        "game_dates",
-        "game_durations",
-        "champions",
-        "wins",
-        "total_games",
-    ]:
-        if key not in kills_data:
-            kills_data[key] = [] if key != "total_games" else 0
-    print(f"[DEBUG] extract_kills_data returning: {kills_data}")
-    return dict(kills_data)
+        player_team_id = player.get("teamId")
+        for part in participants:
+            if part.get("teamId") == player_team_id:
+                team_kills += int(part.get("kills", 0))
+        kp = (kills + assists) / max(team_kills, 1) * 100
+        kills_data["kill_participation"].append(kp)
+        kills_data["champions"].append(str(player.get("championName", "Unknown")))
+        kills_data["wins"].append(bool(player.get("win", False)))
+
+    return kills_data
 
 
 def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
@@ -239,7 +225,7 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
         ax4.grid(True, alpha=0.3)
 
     save_figure(
-        plt.gcf(),
+        fig,
         f"kills_analysis_{sanitize_player(player_name)}",
         description="kills analysis",
     )
@@ -255,7 +241,13 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
 
     # Champion performance analysis
     champion_stats: Dict[str, ChampionStats] = defaultdict(
-        lambda: {"kills": [], "deaths": [], "assists": [], "kda": [], "games": 0}
+        lambda: {
+            "kills": [],
+            "deaths": [],
+            "assists": [],
+            "kda": [],
+            "games": 0,
+        }
     )
 
     for i, champion in enumerate(kills_data["champions"]):
@@ -307,6 +299,7 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
     champion_kills = [top_champions[champ]["kills"] for champ in champions]
     bp = ax2.boxplot(champion_kills, labels=champions, patch_artist=True)
 
+    # Use a stable qualitative colormap available in all versions
     colors = plt.cm.Set3(np.linspace(0, 1, len(champions)))
     for patch, color in zip(bp["boxes"], colors):
         patch.set_facecolor(color)
@@ -316,7 +309,12 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
     ax2.tick_params(axis="x", rotation=45)
     ax2.grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    fig.tight_layout()
+    save_figure(
+        fig,
+        f"kills_detailed_{sanitize_player(player_name)}",
+        description="detailed kills performance",
+    )
     plt.show()
 
 

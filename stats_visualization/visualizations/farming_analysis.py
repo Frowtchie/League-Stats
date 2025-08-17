@@ -10,7 +10,9 @@ import sys
 import argparse
 from pathlib import Path
 from collections import defaultdict
+from typing import DefaultDict
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 from dotenv import load_dotenv
 from typing import Optional, List
@@ -142,14 +144,14 @@ def plot_farming_performance(player_name: str, economy_data: EconomyData) -> Non
     ax1.grid(True, alpha=0.3)
 
     # CS/min by role
-    role_cs = defaultdict(list)
+    role_cs: DefaultDict[str, list[float]] = defaultdict(list)
     for cs, role in zip(cs_per_min, roles):
         if role and role != "Unknown":
             role_cs[role].append(cs)
 
     if role_cs:
-        roles_list = list(role_cs.keys())
-        cs_by_role = [role_cs[role] for role in roles_list]
+        roles_list: list[str] = list(role_cs.keys())
+        cs_by_role: list[list[float]] = [role_cs[role] for role in roles_list]
 
         bp = ax2.boxplot(cs_by_role, tick_labels=roles_list, patch_artist=True)
         for patch in bp["boxes"]:
@@ -183,7 +185,7 @@ def plot_farming_performance(player_name: str, economy_data: EconomyData) -> Non
     # Win rate by CS performance
     cs_quartiles = np.percentile(cs_per_min, [25, 50, 75])
     categories = ["Bottom 25%", "25-50%", "50-75%", "Top 25%"]
-    win_rates = []
+    win_rates: list[float] = []
 
     for i, (lower, upper) in enumerate(
         [
@@ -289,8 +291,8 @@ def plot_gold_efficiency(player_name: str, economy_data: EconomyData) -> None:
     ax3.grid(True, alpha=0.3)
 
     # Format axes
-    ax3.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
-    ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
+    ax3.xaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
+    ax3.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
 
     # Economic efficiency over time
     game_numbers = range(1, len(damage_per_gold) + 1)
@@ -333,7 +335,9 @@ def plot_role_economy_comparison(player_name: str, economy_data: EconomyData) ->
     vision_scores = economy_data["vision_score"]
 
     # Group data by role
-    role_data = defaultdict(
+    from typing import Dict, Any
+
+    role_data: Dict[str, Dict[str, Any]] = defaultdict(
         lambda: {"cs_per_min": [], "gold_per_min": [], "vision_score": [], "games": 0}
     )
 
@@ -355,10 +359,10 @@ def plot_role_economy_comparison(player_name: str, economy_data: EconomyData) ->
         print(f"No roles with enough games for {player_name}")
         return
 
-    role_names = list(filtered_roles.keys())
-    avg_cs = [np.mean(filtered_roles[role]["cs_per_min"]) for role in role_names]
-    avg_gpm = [np.mean(filtered_roles[role]["gold_per_min"]) for role in role_names]
-    avg_vision = [np.mean(filtered_roles[role]["vision_score"]) for role in role_names]
+    role_names: list[str] = list(filtered_roles.keys())
+    avg_cs: list[float] = [np.mean(filtered_roles[role]["cs_per_min"]) for role in role_names]
+    avg_gpm: list[float] = [np.mean(filtered_roles[role]["gold_per_min"]) for role in role_names]
+    avg_vision: list[float] = [np.mean(filtered_roles[role]["vision_score"]) for role in role_names]
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
 

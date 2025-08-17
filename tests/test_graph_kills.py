@@ -100,8 +100,12 @@ class TestGraphKills(unittest.TestCase):
         ]:
             if key not in mock_data:
                 mock_data[key] = [] if key != "total_games" else 0
-        with patch("matplotlib.pyplot.show") as mock_show:  # type: ignore[arg-type]
-            graph_kills.plot_kills_analysis("TestPlayer", mock_data)  # type: ignore[arg-type]
+        from typing import cast
+        from stats_visualization.viz_types import KillsData
+
+        typed_data = cast(KillsData, mock_data)
+        with patch("matplotlib.pyplot.show") as mock_show:
+            graph_kills.plot_kills_analysis("TestPlayer", typed_data)
             self.assertTrue(mock_show.called)
 
 

@@ -167,9 +167,9 @@ def calculate_clear_time_from_timeline(
 
         # Simple heuristic: if 4+ jungle monsters killed in first 5 minutes,
         # consider the time of the 4th kill as clear completion
-        early_kills = [k for k in jungle_kills if k["timestamp"] <= 5.0]
+        early_kills: List[Dict[str, Any]] = [k for k in jungle_kills if k["timestamp"] <= 5.0]
         if len(early_kills) >= 4:
-            return early_kills[3]["timestamp"]  # 4th kill timestamp
+            return float(early_kills[3]["timestamp"])  # 4th kill timestamp
 
     return None
 
@@ -429,9 +429,9 @@ Jungle Games: {jungle_data['jungle_games']}
 """
 
     if jungle_data["wins"]:
-        wins = jungle_data["wins"]
-        win_rate = np.mean(wins) * 100
-        summary_text += f"Win Rate: {win_rate:.1f}% ({sum(wins)}/{len(wins)})"
+        wins_list = jungle_data["wins"]
+        win_rate = np.mean(wins_list) * 100
+        summary_text += f"Win Rate: {win_rate:.1f}% ({sum(wins_list)}/{len(wins_list)})"
 
     ax4.text(
         0.05,

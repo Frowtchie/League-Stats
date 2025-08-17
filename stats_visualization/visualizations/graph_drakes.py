@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Drake statistics visualization.
+
+Focuses on extracting minimal typed data from raw match JSON while keeping
+implementation simple (avoid over-defensive runtime checks that confuse
+static analysis). Only keys actually used are typed via small TypedDicts.
 """
-Personal drake statistics visualization for League of Legends match data.
-Analyzes dragon control from personal match history.
-"""
+from __future__ import annotations
 import os
 import sys
 import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Optional, List
+from typing import Optional, List, Any, Dict, TypedDict, cast
 from dotenv import load_dotenv
 from stats_visualization import league, analyze
 from stats_visualization.viz_types import DrakeData
@@ -21,6 +24,25 @@ sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
 
 
+class _Participant(TypedDict, total=False):
+    puuid: str
+    teamId: int
+    win: bool
+
+
+class _DragonObj(TypedDict, total=False):
+    kills: int
+
+
+class _Objectives(TypedDict, total=False):
+    dragon: _DragonObj
+
+
+class _Team(TypedDict, total=False):
+    teamId: int
+    objectives: _Objectives
+
+
 def extract_drake_data(
     player_puuid: str,
     matches_dir: str = "matches",
@@ -28,26 +50,14 @@ def extract_drake_data(
     queue_filter: Optional[List[int]] = None,
     game_mode_whitelist: Optional[List[str]] = None,
 ) -> DrakeData:
-    """
-    Extract drake-related data for a specific player from match history.
-
-    Args:
-        player_puuid (str): PUUID of the player
-        matches_dir (str): Directory containing match JSON files
-
-    Returns:
-        Dict containing drake statistics
-    """
-    print(f"[DEBUG] extract_drake_data called with player_puuid={player_puuid}")
+    """Extract drake-related data for a specific player from match history."""
     raw_matches = analyze.load_match_files(matches_dir)
-    print(f"[DEBUG] [extract_drake_data] raw_matches loaded: {raw_matches}")
     matches = filter_matches(
         raw_matches,
         include_aram=include_aram,
         allowed_queue_ids=queue_filter,
         allowed_game_modes=game_mode_whitelist,
     )
-    print(f"[DEBUG] [extract_drake_data] matches after filter: {matches}")
     drake_data: DrakeData = {
         "player_team_drakes": [],
         "enemy_team_drakes": [],
@@ -55,54 +65,58 @@ def extract_drake_data(
         "game_durations": [],
         "total_games": 0,
     }
-    for match in matches:
-        print(f"[DEBUG] processing match: {match}")
 
-    # Always return drake_data, even if matches is empty
     for match in matches:
-        if "info" not in match or "participants" not in match["info"]:
+        info_raw = match.get("info")
+        if not isinstance(info_raw, dict):
             continue
-        player_team_id = None
+        participants_raw = info_raw.get("participants")
+        if not isinstance(participants_raw, list):
+            continue
+        participants: List[_Participant] = [
+            cast(_Participant, p) for p in participants_raw if isinstance(p, dict)
+        ]
+        player_team_id: Optional[int] = None
         player_won = False
-        for participant in match["info"]["participants"]:
-            if participant.get("puuid") == player_puuid:
-                player_team_id = participant.get("teamId")
-                player_won = participant.get("win", False)
+        for part in participants:
+            if part.get("puuid") == player_puuid:
+                tid_val = part.get("teamId")
+                if isinstance(tid_val, int):
+                    player_team_id = tid_val
+                player_won = bool(part.get("win", False))
                 break
         if player_team_id is None:
             continue
         drake_data["total_games"] += 1
-        game_duration = match["info"].get("gameDuration", 0)
-        drake_data["game_durations"].append(game_duration / 60)
+        gdur = info_raw.get("gameDuration")
+        if isinstance(gdur, (int, float)):
+            drake_data["game_durations"].append(float(gdur) / 60.0)
+        else:
+            drake_data["game_durations"].append(0.0)
         drake_data["wins"].append(player_won)
-        if "teams" in match["info"]:
+        teams_raw = info_raw.get("teams")
+        if isinstance(teams_raw, list):
+            teams: List[_Team] = [cast(_Team, t) for t in teams_raw if isinstance(t, dict)]
             player_drakes = 0
             enemy_drakes = 0
-            for team in match["info"]["teams"]:
-                dragon_kills = team.get("objectives", {}).get("dragon", {}).get("kills", 0)
-                if team["teamId"] == player_team_id:
-                    player_drakes = dragon_kills
-                else:
-                    enemy_drakes = dragon_kills
+            for team in teams:
+                obj = team.get("objectives", {})
+                if isinstance(obj, dict):
+                    dragon = obj.get("dragon", {})
+                    if isinstance(dragon, dict):
+                        dk = dragon.get("kills", 0)
+                        if isinstance(dk, int):
+                            if team.get("teamId") == player_team_id:
+                                player_drakes = dk
+                            else:
+                                enemy_drakes = dk
             drake_data["player_team_drakes"].append(player_drakes)
             drake_data["enemy_team_drakes"].append(enemy_drakes)
-    for key in [
-        "player_team_drakes",
-        "enemy_team_drakes",
-        "wins",
-        "game_durations",
-        "total_games",
-    ]:
-        if key not in drake_data:
-            drake_data[key] = [] if key != "total_games" else 0
-    print(f"[DEBUG] extract_drake_data returning: {drake_data}")
-    return dict(drake_data)
+    return drake_data
 
 
 def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
-    """
-    Create comprehensive drake analysis visualization.
-    """
+    """Create comprehensive drake analysis visualization."""
     if drake_data["total_games"] == 0:
         print(f"No games found for {player_name}")
         plt.figure(figsize=(8, 4))
@@ -118,9 +132,9 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
 
     teams = ["Player Team", "Enemy Team"]
     avg_drakes = [avg_player_drakes, avg_enemy_drakes]
-    colors = ["lightblue", "lightcoral"]
+    team_colors = ["lightblue", "lightcoral"]
 
-    bars1 = ax1.bar(teams, avg_drakes, color=colors, alpha=0.7)
+    bars1 = ax1.bar(teams, avg_drakes, color=team_colors, alpha=0.7)
     ax1.set_ylabel("Average Dragons per Game")
     ax1.set_title(f"{player_name} - Dragon Control Comparison")
 
@@ -148,7 +162,7 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
     ax2.grid(True, alpha=0.3)
 
     # Win rate by drake control
-    win_rates = {"Behind": [], "Even": [], "Ahead": []}
+    win_rates: dict[str, list[bool]] = {"Behind": [], "Even": [], "Ahead": []}
     for p_drakes, e_drakes, win in zip(
         drake_data["player_team_drakes"],
         drake_data["enemy_team_drakes"],
@@ -161,9 +175,9 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
         else:
             win_rates["Ahead"].append(win)
 
-    categories = []
-    wr_values = []
-    colors = []
+    categories: list[str] = []
+    wr_values: list[float] = []
+    colors: list[str] = []
 
     for category, wins in win_rates.items():
         if wins:
@@ -229,7 +243,10 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
 def main():
     """Main function for drake analysis visualization."""
     parser = argparse.ArgumentParser(
-        description="Generate personal drake statistics visualization (Summoner's Rift by default – ARAM excluded unless --include-aram)"
+        description=(
+            "Generate personal drake statistics visualization (SR default – ARAM excluded "
+            "unless --include-aram)"
+        )
     )
     parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
@@ -295,7 +312,6 @@ def main():
             return
 
     matches_dir = args.matches_dir
-    # Ensure there are matches for this player, fetch if needed
     num_matches = league.ensure_matches_for_player(
         player_puuid, token, matches_dir, min_matches=1, fetch_count=10
     )

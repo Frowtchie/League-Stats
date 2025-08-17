@@ -202,7 +202,7 @@ def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData
         for b, h in zip(objective_data["enemy_team_barons"], objective_data["enemy_team_heralds"])
     ]
 
-    win_rates = {"Behind": [], "Even": [], "Ahead": []}
+    win_rates: dict[str, list[bool]] = {"Behind": [], "Even": [], "Ahead": []}
     for p_obj, e_obj, win in zip(player_total_obj, enemy_total_obj, objective_data["wins"]):
         if p_obj < e_obj:
             win_rates["Behind"].append(win)
@@ -211,9 +211,9 @@ def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData
         else:
             win_rates["Ahead"].append(win)
 
-    categories = []
-    wr_values = []
-    colors = []
+    categories: list[str] = []
+    wr_values: list[float] = []
+    colors: list[str] = []
 
     for category, wins in win_rates.items():
         if wins:
@@ -255,7 +255,10 @@ def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData
 def main():
     """Main function for baron and herald analysis visualization."""
     parser = argparse.ArgumentParser(
-        description="Generate personal baron and herald statistics visualization (Summoner's Rift by default – ARAM excluded unless --include-aram)"
+        description=(
+            "Generate personal baron & herald statistics visualization (SR default – ARAM excluded "
+            "unless --include-aram)"
+        )
     )
     parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")

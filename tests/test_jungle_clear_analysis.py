@@ -2,7 +2,6 @@ import unittest
 import sys
 import os
 from unittest.mock import patch
-from typing import Any, Dict
 
 # Add the stats_visualization directory to the path
 sys.path.insert(

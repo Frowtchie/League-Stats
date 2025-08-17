@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-from matplotlib.figure import Figure  # type: ignore
+from matplotlib.figure import Figure
 from typing import Iterable, Sequence, Any
 
 

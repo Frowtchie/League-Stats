@@ -32,9 +32,9 @@ class EarlyGameData(TypedDict):
     first_blood_deaths: int
     first_blood_assists: int
     first_tower_kills: int
-    early_kills: List[int]
-    early_deaths: List[int]
-    early_cs: List[int]
+    early_kills: List[float]
+    early_deaths: List[float]
+    early_cs: List[float]
     wins: List[bool]
     champions: List[str]
     roles: List[str]
@@ -63,7 +63,7 @@ class EconomyData(TypedDict):
     cs_per_min: List[float]
     gold_per_min: List[float]
     damage_per_gold: List[float]
-    vision_score: List[int]
+    vision_score: List[float]
     game_durations: List[float]
     total_cs: List[int]
     total_gold: List[int]

@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import requests
 from dotenv import load_dotenv
@@ -190,19 +190,19 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
         response = make_api_request(url, headers)
         data = response.json()
 
-        # Validate response
         if not isinstance(data, dict) or "puuid" not in data:
             raise ValueError("Invalid response format - missing PUUID")
 
-        puuid = str(data["puuid"])  # type: ignore
+        from typing import cast
+
+        puuid = cast(str, data["puuid"])  # ensure str type
         logger.info(f"Successfully retrieved PUUID for {game_name}#{tag_line}")
         return puuid
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 404:
             raise ValueError(f"Player '{game_name}#{tag_line}' not found")
-        else:
-            logger.error(f"HTTP error fetching PUUID: {e}")
-            raise
+        logger.error(f"HTTP error fetching PUUID: {e}")
+        raise
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to fetch PUUID for {game_name}#{tag_line}: {e}")
         raise
@@ -233,7 +233,10 @@ def fetch_match_data(match_id: str, token: str) -> Dict[str, Any]:
         logger.info(f"Fetching match data for {match_id}")
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("Match data response was not an object")
+        return cast(Dict[str, Any], data)
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to fetch data for match {match_id}: {e}")
         raise
@@ -260,7 +263,10 @@ def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict[str, Any]]:
         logger.info(f"Fetching timeline data for {match_id}")
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if not isinstance(data, dict):
+            return None
+        return cast(Dict[str, Any], data)
     except requests.exceptions.RequestException as e:
         logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
         return None
@@ -282,7 +288,6 @@ def fetch_match_with_timeline(match_id: str, token: str) -> Dict[str, Any]:
     """
     # Fetch main match data
     match_data = fetch_match_data(match_id, token)
-
     # Fetch timeline data (optional, don't fail if it's not available)
     timeline_data = fetch_timeline_data(match_id, token)
 
@@ -333,7 +338,8 @@ def load_cached_match_data(match_id: str) -> Optional[Dict[str, Any]]:
 
     try:
         with open(file_path, "r", encoding="utf-8") as file:
-            data = json.load(file)
+            loaded = json.load(file)
+            data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
 
         # Validate cached data
         if validate_match_data(data):
@@ -421,12 +427,15 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
         url = f"{MATCH_HISTORY_URL}{puuid}/ids?start={start}&count={batch_count}"
         try:
             response = make_api_request(url, headers)
-            match_ids = response.json()
-            # Ensure all elements are strings
-            match_ids: List[str] = [str(mid) for mid in match_ids]
-            all_match_ids.extend(match_ids)
-            logger.info(f"Fetched {len(match_ids)} match IDs (start={start}, count={batch_count})")
-            if len(match_ids) < batch_count:
+            raw_ids_any = response.json()
+            if not isinstance(raw_ids_any, list):
+                raise ValueError("Match history response was not a list")
+            raw_ids: List[object] = list(raw_ids_any)
+            raw_ids_filtered: List[object] = [mid for mid in raw_ids if isinstance(mid, (str, int))]
+            batch_ids: List[str] = [str(mid) for mid in raw_ids_filtered]
+            all_match_ids.extend(batch_ids)
+            logger.info(f"Fetched {len(batch_ids)} match IDs (start={start}, count={batch_count})")
+            if len(batch_ids) < batch_count:
                 # No more matches available
                 break
             start += batch_count

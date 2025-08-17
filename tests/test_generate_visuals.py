@@ -53,7 +53,7 @@ class TestGenerateAllVisuals(unittest.TestCase):
             clean_calls.append(1)
             return 0
 
-        _utils.clean_output = _clean_output_stub  # type: ignore
+        _utils.clean_output = _clean_output_stub  # monkeypatch without ignore
 
         def _plot(name: str):  # noqa: WPS430
             def _inner(*_a: object, **_k: object) -> None:  # noqa: WPS430

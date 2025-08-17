@@ -1,10 +1,10 @@
 import matplotlib
-
-matplotlib.use("Agg")
 import unittest
 from unittest.mock import patch
 from typing import Any, Dict, List
 from stats_visualization.visualizations import personal_performance
+
+matplotlib.use("Agg")
 
 
 class TestPersonalPerformance(unittest.TestCase):

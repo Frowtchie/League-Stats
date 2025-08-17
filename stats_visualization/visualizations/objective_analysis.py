@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from stats_visualization import league
 from stats_visualization import analyze
 from stats_visualization.viz_types import ObjectiveData
-from stats_visualization.utils import filter_matches
+from stats_visualization.utils import filter_matches, save_figure, sanitize_player
 
 sys.path.append(str(Path(__file__).parent.parent.parent))  # noqa: E402
 load_dotenv(dotenv_path="config.env")
@@ -138,18 +138,17 @@ def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> N
     """
     Plot objective control statistics.
     """
-    objectives = ["Dragons", "Barons", "Heralds", "Towers"]
-    data_keys = ["dragons", "barons", "heralds", "towers"]
-
+    breakdowns = [
+        ("Dragons", objective_data["dragons"]),
+        ("Barons", objective_data["barons"]),
+        ("Heralds", objective_data["heralds"]),
+        ("Towers", objective_data["towers"]),
+    ]
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
     axes = [ax1, ax2, ax3, ax4]
-
-    for i, (obj_name, data_key) in enumerate(zip(objectives, data_keys)):
-        ax = axes[i]
-
-        player_objs = objective_data[data_key]["player_team"]
-        enemy_objs = objective_data[data_key]["enemy_team"]
-
+    for (obj_name, breakdown), ax in zip(breakdowns, axes):
+        player_objs = breakdown["player_team"]
+        enemy_objs = breakdown["enemy_team"]
         if not player_objs:
             ax.text(
                 0.5,
@@ -161,22 +160,17 @@ def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> N
             )
             ax.set_title(f"{player_name} - {obj_name} Control")
             continue
-
-        # Calculate averages
-        avg_player = np.mean(player_objs)
-        avg_enemy = np.mean(enemy_objs)
-
-        # Create comparison bar chart
-        categories = ["Player Team", "Enemy Team"]
-        values = [avg_player, avg_enemy]
-        colors = ["lightblue", "lightcoral"]
-
-        bars = ax.bar(categories, values, color=colors, alpha=0.7)
+        avg_player = float(np.mean(player_objs))
+        avg_enemy = float(np.mean(enemy_objs))
+        bars = ax.bar(
+            ["Player Team", "Enemy Team"],
+            [avg_player, avg_enemy],
+            color=["lightblue", "lightcoral"],
+            alpha=0.7,
+        )
         ax.set_ylabel(f"Average {obj_name} per Game")
         ax.set_title(f"{player_name} - Average {obj_name} Control")
-
-        # Add value labels on bars
-        for bar, value in zip(bars, values):
+        for bar, value in zip(bars, [avg_player, avg_enemy]):
             height = bar.get_height()
             ax.text(
                 bar.get_x() + bar.get_width() / 2.0,
@@ -185,15 +179,10 @@ def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> N
                 ha="center",
                 va="bottom",
             )
-
-        # Add win rate when ahead in this objective
         wins_when_ahead = sum(
-            1
-            for p, e, w in zip(player_objs, enemy_objs, objective_data[data_key]["wins"])
-            if p > e and w
+            1 for p, e, w in zip(player_objs, enemy_objs, breakdown["wins"]) if p > e and w
         )
         games_ahead = sum(1 for p, e in zip(player_objs, enemy_objs) if p > e)
-
         if games_ahead > 0:
             win_rate_ahead = wins_when_ahead / games_ahead * 100
             ax.text(
@@ -270,39 +259,36 @@ def plot_objective_win_correlation(player_name: str, objective_data: ObjectiveDa
     """
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    objectives = ["Dragons", "Barons", "Heralds", "Towers"]
-    data_keys = ["dragons", "barons", "heralds", "towers"]
-
-    win_rates_ahead = []
-    win_rates_behind = []
-    win_rates_even = []
-
-    for data_key in data_keys:
-        player_objs = objective_data[data_key]["player_team"]
-        enemy_objs = objective_data[data_key]["enemy_team"]
-        wins = objective_data[data_key]["wins"]
-
-        if not player_objs:
+    breakdowns = [
+        ("Dragons", objective_data["dragons"]),
+        ("Barons", objective_data["barons"]),
+        ("Heralds", objective_data["heralds"]),
+        ("Towers", objective_data["towers"]),
+    ]
+    objectives = [name for name, _ in breakdowns]
+    win_rates_ahead: list[float] = []
+    win_rates_behind: list[float] = []
+    win_rates_even: list[float] = []
+    for _, bd in breakdowns:
+        p_objs = bd["player_team"]
+        e_objs = bd["enemy_team"]
+        wins = bd["wins"]
+        if not p_objs:
             win_rates_ahead.append(0)
             win_rates_behind.append(0)
             win_rates_even.append(0)
             continue
-
-        # Calculate win rates based on objective control
-        wins_ahead = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p > e and w)
-        games_ahead = sum(1 for p, e in zip(player_objs, enemy_objs) if p > e)
-
-        wins_behind = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p < e and w)
-        games_behind = sum(1 for p, e in zip(player_objs, enemy_objs) if p < e)
-
-        wins_even = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p == e and w)
-        games_even = sum(1 for p, e in zip(player_objs, enemy_objs) if p == e)
-
+        wins_ahead = sum(1 for p, e, w in zip(p_objs, e_objs, wins) if p > e and w)
+        games_ahead = sum(1 for p, e in zip(p_objs, e_objs) if p > e)
+        wins_behind = sum(1 for p, e, w in zip(p_objs, e_objs, wins) if p < e and w)
+        games_behind = sum(1 for p, e in zip(p_objs, e_objs) if p < e)
+        wins_even = sum(1 for p, e, w in zip(p_objs, e_objs, wins) if p == e and w)
+        games_even = sum(1 for p, e in zip(p_objs, e_objs) if p == e)
         win_rates_ahead.append(wins_ahead / max(games_ahead, 1) * 100)
         win_rates_behind.append(wins_behind / max(games_behind, 1) * 100)
         win_rates_even.append(wins_even / max(games_even, 1) * 100)
 
-    x = np.arange(len(objectives))
+    x = np.arange(len(breakdowns))
     width = 0.25
 
     bars1 = ax.bar(x - width, win_rates_ahead, width, label="When Ahead", color="green", alpha=0.7)

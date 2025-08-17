@@ -140,7 +140,7 @@ def load_player_match_data(
     Returns:
         list[dict]: List of match data for the player
     """
-    raw_matches: list[dict[str, Any]] = analyze.load_match_files(matches_dir)  # type: ignore[assignment]
+    raw_matches: list[dict[str, Any]] = analyze.load_match_files(matches_dir)
     matches = filter_matches(
         raw_matches,
         include_aram=include_aram,
@@ -267,7 +267,7 @@ def plot_champion_performance(
     ax1.legend()
 
     # Plot Average KDA by Champion
-    bars2 = ax2.bar(champions, avg_kdas, color="orange", alpha=0.8)
+    ax2.bar(champions, avg_kdas, color="orange", alpha=0.8)
     ax2.set_ylabel("Average KDA")
     ax2.set_title(f"{player_name} - Average KDA by Champion")
     ax2.set_xlabel("Champion")
@@ -360,7 +360,7 @@ def plot_role_performance(
     ax1.set_title(f"{player_name} - Games by Role")
 
     # Win rate by role
-    bars2 = ax2.bar(roles, win_rates, color="lightgreen", alpha=0.7)
+    ax2.bar(roles, win_rates, color="lightgreen", alpha=0.7)
     ax2.axhline(y=50, color="red", linestyle="--", alpha=0.7, label="50% Win Rate")
     ax2.set_ylabel("Win Rate (%)")
     ax2.set_title("Win Rate by Role")
@@ -368,7 +368,7 @@ def plot_role_performance(
     ax2.set_ylim(0, 100)
 
     # Add game count labels
-    for bar, games in zip(bars2, games_played):
+    for bar, games in zip(ax2.patches, games_played):
         height = bar.get_height()
         ax2.text(
             bar.get_x() + bar.get_width() / 2.0,
@@ -417,8 +417,11 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
         data = response.json()
         if not isinstance(data, dict) or "puuid" not in data:
             raise ValueError("Invalid response format - missing PUUID")
-        return data["puuid"]
-    except Exception as e:
+        puuid_val = data.get("puuid")
+        if not isinstance(puuid_val, str):
+            raise ValueError("PUUID field not a string")
+        return puuid_val
+    except Exception as e:  # pragma: no cover - network error path
         print(f"Error fetching PUUID for {game_name}#{tag_line}: {e}")
         raise
 

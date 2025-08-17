@@ -141,12 +141,13 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     # Early game kill distribution
     ax2.hist(
         early_game_data["early_kills"],
-        bins=range(0, max(early_game_data["early_kills"]) + 2),
+        # Cast max to int to satisfy typing (lists are List[float] but represent integral counts)
+        bins=range(0, int(max(early_game_data["early_kills"])) + 2),
         alpha=0.7,
         color="red",
         edgecolor="black",
     )
-    avg_kills = np.mean(early_game_data["early_kills"])
+    avg_kills = float(np.mean(early_game_data["early_kills"]))
     ax2.axvline(avg_kills, color="blue", linestyle="--", label=f"Average: {avg_kills:.1f}")
     ax2.set_xlabel("Kills per Game")
     ax2.set_ylabel("Number of Games")
@@ -157,12 +158,12 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     # Early game deaths distribution
     ax3.hist(
         early_game_data["early_deaths"],
-        bins=range(0, max(early_game_data["early_deaths"]) + 2),
+        bins=range(0, int(max(early_game_data["early_deaths"])) + 2),
         alpha=0.7,
         color="darkred",
         edgecolor="black",
     )
-    avg_deaths = np.mean(early_game_data["early_deaths"])
+    avg_deaths = float(np.mean(early_game_data["early_deaths"]))
     ax3.axvline(avg_deaths, color="blue", linestyle="--", label=f"Average: {avg_deaths:.1f}")
     ax3.set_xlabel("Deaths per Game")
     ax3.set_ylabel("Number of Games")
@@ -171,10 +172,10 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     ax3.grid(True, alpha=0.3)
 
     # Win rate correlation with first blood involvement
-    fb_involved = []
-    fb_not_involved = []
+    fb_involved: list[bool] = []
+    fb_not_involved: list[bool] = []
 
-    for i, (fb_kill, fb_assist, fb_death, win) in enumerate(
+    for i, (_, _, _, win) in enumerate(
         zip(
             [early_game_data["first_blood_kills"] > 0] * early_game_data["total_games"],
             [early_game_data["first_blood_assists"] > 0] * early_game_data["total_games"],
@@ -190,9 +191,9 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
         else:
             fb_not_involved.append(win)
 
-    categories = []
-    win_rates = []
-    colors_wr = []
+    categories: list[str] = []
+    win_rates: list[float] = []
+    colors_wr: list[str] = []
 
     if fb_involved:
         categories.append(f"Good Early Game\n({len(fb_involved)} games)")
@@ -236,7 +237,11 @@ def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGame
     """
     Compare early game performance across different roles.
     """
-    role_data = defaultdict(lambda: {"kills": [], "deaths": [], "cs": [], "games": 0})
+    from typing import Dict, Any
+
+    role_data: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {"kills": [], "deaths": [], "cs": [], "games": 0}
+    )
 
     for role, kills, deaths, cs in zip(
         early_game_data["roles"],
@@ -257,9 +262,9 @@ def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGame
         print(f"No roles with enough games for comparison: {len(filtered_roles)}")
         return
 
-    role_names = list(filtered_roles.keys())
-    avg_kills = [np.mean(filtered_roles[role]["kills"]) for role in role_names]
-    avg_deaths = [np.mean(filtered_roles[role]["deaths"]) for role in role_names]
+    role_names: list[str] = list(filtered_roles.keys())
+    avg_kills: list[float] = [np.mean(filtered_roles[role]["kills"]) for role in role_names]
+    avg_deaths: list[float] = [np.mean(filtered_roles[role]["deaths"]) for role in role_names]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 

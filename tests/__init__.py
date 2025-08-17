@@ -33,4 +33,4 @@ def _filtered_print(*args: Any, **kwargs: Any) -> None:  # noqa: D401
 
 
 # Install filtered print early so it's active for subsequently imported tests
-builtins.print = _filtered_print  # type: ignore[assignment]
+builtins.print = _filtered_print

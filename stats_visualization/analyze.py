@@ -21,11 +21,7 @@ sys.path.insert(0, str(PROJECT_ROOT)) if str(PROJECT_ROOT) not in sys.path else 
 
 logger = logging.getLogger(__name__)
 
-try:
-    # Import shared match filtering (used across visualization scripts)
-    from stats_visualization.utils import filter_matches  # type: ignore
-except Exception:  # pragma: no cover - fallback if path issues
-    filter_matches = None  # type: ignore
+from stats_visualization.utils import filter_matches
 
 
 def apply_analysis_filters(
@@ -40,8 +36,6 @@ def apply_analysis_filters(
     Mirrors visualization scripts: ARAM excluded by default; optional queue & gameMode whitelists.
     If filtering utility unavailable, returns matches unchanged.
     """
-    if filter_matches is None:
-        return matches
     return filter_matches(
         matches,
         include_aram=include_aram,
@@ -608,7 +602,7 @@ def generate_all_visuals(
         clean: If True, remove existing PNGs before generation
         matches_dir: Directory with match JSONs
     """
-    from stats_visualization.utils import clean_output  # type: ignore
+    from stats_visualization.utils import clean_output
 
     print("\n=== Generating visualization suite ===")
     if clean:
@@ -627,7 +621,7 @@ def generate_all_visuals(
             results.append((name, f"fail: {exc}"))
 
     # 1. Personal performance (trends, champions, roles)
-    from stats_visualization.visualizations import personal_performance as _pp  # type: ignore
+    from stats_visualization.visualizations import personal_performance as _pp
 
     _run(
         "personal_trends",
@@ -670,7 +664,7 @@ def generate_all_visuals(
     )
 
     # 2. Kills
-    from stats_visualization.visualizations import graph_kills as _gk  # type: ignore
+    from stats_visualization.visualizations import graph_kills as _gk
 
     _run(
         "kills",
@@ -687,7 +681,7 @@ def generate_all_visuals(
     )
 
     # 3. Drake control
-    from stats_visualization.visualizations import graph_drakes as _gd  # type: ignore
+    from stats_visualization.visualizations import graph_drakes as _gd
 
     _run(
         "drakes",
@@ -704,7 +698,7 @@ def generate_all_visuals(
     )
 
     # 4. Baron / Herald
-    from stats_visualization.visualizations import graph_barons_heralds as _bh  # type: ignore
+    from stats_visualization.visualizations import graph_barons_heralds as _bh
 
     _run(
         "barons_heralds",
@@ -721,7 +715,7 @@ def generate_all_visuals(
     )
 
     # 5. Objectives (control, first, correlation)
-    from stats_visualization.visualizations import objective_analysis as _oa  # type: ignore
+    from stats_visualization.visualizations import objective_analysis as _oa
 
     _run(
         "objectives_control",
@@ -758,7 +752,7 @@ def generate_all_visuals(
         )
 
     # 6. Farming / economy (farming, gold, roles)
-    from stats_visualization.visualizations import farming_analysis as _fa  # type: ignore
+    from stats_visualization.visualizations import farming_analysis as _fa
 
     try:
         _econ = _fa.extract_economy_data(
@@ -779,7 +773,7 @@ def generate_all_visuals(
         )
 
     # 7. First blood / early game
-    from stats_visualization.visualizations import graph_first_bloods as _fb  # type: ignore
+    from stats_visualization.visualizations import graph_first_bloods as _fb
 
     _run(
         "first_bloods",
@@ -790,7 +784,7 @@ def generate_all_visuals(
     )
 
     # 8. Jungle clear
-    from stats_visualization.visualizations import jungle_clear_analysis as _jc  # type: ignore
+    from stats_visualization.visualizations import jungle_clear_analysis as _jc
 
     _run(
         "jungle_clear",

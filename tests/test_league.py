@@ -4,8 +4,8 @@ import os
 from unittest.mock import patch, Mock, mock_open
 
 # Add the project root to the path
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from stats_visualization import league
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # noqa: E402
+from stats_visualization import league  # noqa: E402
 
 
 class TestLeagueModule(unittest.TestCase):

@@ -2,7 +2,6 @@ import unittest
 import sys
 import os
 from unittest.mock import patch
-from typing import Any, Dict
 
 # Add visualization scripts and project root to path
 sys.path.insert(
