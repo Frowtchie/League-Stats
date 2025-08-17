@@ -141,6 +141,34 @@ python stats_visualization/visualizations/graph_kills.py Frowtch blue --ranked-o
 python stats_visualization/visualizations/graph_first_bloods.py Frowtch blue
 ```
 
+### Run with a Graphical Interface (GUI Prototype)
+
+An optional Streamlit GUI lets you fetch matches and generate all charts without using the CLI.
+
+1. Install GUI dependency (already included in `requirements.txt`):
+    ```bash
+    pip install -r requirements.txt
+    ```
+2. Ensure `RIOT_API_TOKEN` is set in `config.env`.
+3. Launch the app:
+    ```bash
+    streamlit run stats_visualization/gui_app.py
+    ```
+4. Enter IGN + tag, adjust filters, click Generate / Refresh Charts.
+
+Features:
+- Auto PUUID lookup & minimum match fetch (configurable counts soon)
+- Ranked-only shortcut / custom queue & gameMode filters
+- Optional ARAM inclusion
+- One-click bulk chart generation (reuses `analyze.generate_all_visuals`)
+- Responsive gallery of generated PNGs from `output/`
+
+Planned improvements (feedback welcome):
+- Partial / per-chart regeneration
+- Progress callbacks per visualization instead of single batch
+- Inline numeric summaries (KDA, win rate, objective control)
+- Local persistence of last used settings
+
 
 ### Analyze Match Data
 
@@ -300,6 +328,23 @@ Extended documentation lives in the `docs/` folder:
 - Contributing Guide: `docs/contributing.md`
 - Troubleshooting: `docs/troubleshooting.md`
 - Changelog: `docs/changelog.md`
+
+## Documentation Site (GitHub Pages)
+
+This repository can publish a static documentation site using **MkDocs Material**.
+
+Preview locally:
+
+```bash
+pip install -r requirements.txt
+mkdocs serve
+```
+
+On pushes to `main`, the GitHub Actions workflow in `.github/workflows/docs.yml` (added in this version) builds and deploys the site to GitHub Pages at:
+
+https://Frowtchie.github.io/League-Stats/
+
+Only static markdown and committed assets are published (no API calls during site build). To showcase example charts, copy selected PNGs from `output/` into `docs/examples/` and reference them in markdown.
 
 ## Development
 
