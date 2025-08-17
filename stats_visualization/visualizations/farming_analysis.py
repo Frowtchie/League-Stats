@@ -16,7 +16,7 @@ import sys
 
 # Load environment variables from config.env if present
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, List
 
 load_dotenv(dotenv_path="config.env")
 
@@ -34,8 +34,8 @@ def extract_economy_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: Optional[list[int]] = None,
-    game_mode_whitelist: Optional[list[str]] = None,
+    queue_filter: Optional[List[int]] = None,
+    game_mode_whitelist: Optional[List[str]] = None,
 ) -> EconomyData:
     """
     Extract economy and farming data for a specific player.
