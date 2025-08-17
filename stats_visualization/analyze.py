@@ -581,8 +581,8 @@ def generate_all_visuals(
     player_puuid: str,
     *,
     include_aram: bool = False,
-    queue_filter: Iterable[int] | None = None,
-    game_mode_whitelist: Iterable[str] | None = None,
+    queue_filter: Optional[Iterable[int]] = None,
+    game_mode_whitelist: Optional[Iterable[str]] = None,
     clean: bool = True,
     matches_dir: str = "matches",
 ) -> None:
