@@ -9,7 +9,7 @@ Analyzes kill performance and progression from personal match history.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 import datetime  # noqa: F401
 
 import argparse
@@ -35,8 +35,8 @@ def extract_kills_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> KillsData:
     """
     Extract kills data for a specific player from match history.
@@ -144,9 +144,7 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
 
     # Kills progression over time
     game_numbers = range(1, len(kills_data["kills"]) + 1)
-    ax1.plot(
-        game_numbers, kills_data["kills"], "o-", alpha=0.7, color="red", label="Kills"
-    )
+    ax1.plot(game_numbers, kills_data["kills"], "o-", alpha=0.7, color="red", label="Kills")
     ax1.plot(
         game_numbers,
         kills_data["assists"],
@@ -185,13 +183,9 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
     ax1.grid(True, alpha=0.3)
 
     # KDA distribution
-    ax2.hist(
-        kills_data["kda_ratios"], bins=15, alpha=0.7, color="green", edgecolor="black"
-    )
+    ax2.hist(kills_data["kda_ratios"], bins=15, alpha=0.7, color="green", edgecolor="black")
     avg_kda = np.mean(kills_data["kda_ratios"])
-    ax2.axvline(
-        avg_kda, color="red", linestyle="--", label=f"Average KDA: {avg_kda:.2f}"
-    )
+    ax2.axvline(avg_kda, color="red", linestyle="--", label=f"Average KDA: {avg_kda:.2f}")
     ax2.set_xlabel("KDA Ratio")
     ax2.set_ylabel("Number of Games")
     ax2.set_title(f"{player_name} - KDA Distribution")
@@ -199,9 +193,7 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
     ax2.grid(True, alpha=0.3)
 
     # Kill participation over time
-    ax3.plot(
-        game_numbers, kills_data["kill_participation"], "o-", alpha=0.7, color="purple"
-    )
+    ax3.plot(game_numbers, kills_data["kill_participation"], "o-", alpha=0.7, color="purple")
     avg_kp = np.mean(kills_data["kill_participation"])
     ax3.axhline(avg_kp, color="red", linestyle="--", label=f"Average KP: {avg_kp:.1f}%")
     ax3.set_xlabel("Game Number")
@@ -283,9 +275,7 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
 
     # Get top 6 most played champions
     top_champions = dict(
-        sorted(filtered_champions.items(), key=lambda x: x[1]["games"], reverse=True)[
-            :6
-        ]
+        sorted(filtered_champions.items(), key=lambda x: x[1]["games"], reverse=True)[:6]
     )
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
@@ -332,12 +322,8 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
 def main():
     """Main function for kills analysis visualization."""
 
-    parser = argparse.ArgumentParser(
-        description="Generate personal kills statistics visualization"
-    )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser = argparse.ArgumentParser(description="Generate personal kills statistics visualization")
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -392,9 +378,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(

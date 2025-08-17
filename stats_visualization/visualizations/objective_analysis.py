@@ -10,6 +10,7 @@ Analyzes and visualizes objective control and game impact for personal matches.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
 import argparse
 import sys
@@ -32,8 +33,8 @@ def extract_objective_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> ObjectiveData:
     """
     Extract objective-related data for a specific player.
@@ -102,9 +103,7 @@ def extract_objective_data(
 
             if player_team_objectives and enemy_team_objectives:
                 # Dragons
-                player_dragons = player_team_objectives.get("dragon", {}).get(
-                    "kills", 0
-                )
+                player_dragons = player_team_objectives.get("dragon", {}).get("kills", 0)
                 enemy_dragons = enemy_team_objectives.get("dragon", {}).get("kills", 0)
                 objective_data["dragons"]["player_team"].append(player_dragons)
                 objective_data["dragons"]["enemy_team"].append(enemy_dragons)
@@ -118,12 +117,8 @@ def extract_objective_data(
                 objective_data["barons"]["wins"].append(player_won)
 
                 # Rift Heralds
-                player_heralds = player_team_objectives.get("riftHerald", {}).get(
-                    "kills", 0
-                )
-                enemy_heralds = enemy_team_objectives.get("riftHerald", {}).get(
-                    "kills", 0
-                )
+                player_heralds = player_team_objectives.get("riftHerald", {}).get("kills", 0)
+                enemy_heralds = enemy_team_objectives.get("riftHerald", {}).get("kills", 0)
                 objective_data["heralds"]["player_team"].append(player_heralds)
                 objective_data["heralds"]["enemy_team"].append(enemy_heralds)
                 objective_data["heralds"]["wins"].append(player_won)
@@ -203,9 +198,7 @@ def plot_objective_control(player_name: str, objective_data: ObjectiveData) -> N
         # Add win rate when ahead in this objective
         wins_when_ahead = sum(
             1
-            for p, e, w in zip(
-                player_objs, enemy_objs, objective_data[data_key]["wins"]
-            )
+            for p, e, w in zip(player_objs, enemy_objs, objective_data[data_key]["wins"])
             if p > e and w
         )
         games_ahead = sum(1 for p, e in zip(player_objs, enemy_objs) if p > e)
@@ -251,18 +244,14 @@ def plot_first_objectives(player_name: str, objective_data: ObjectiveData) -> No
 
     # Create bar chart
     fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(
-        obj_names, percentages, color=["red", "purple", "orange", "gray"], alpha=0.7
-    )
+    bars = ax.bar(obj_names, percentages, color=["red", "purple", "orange", "gray"], alpha=0.7)
 
     ax.set_ylabel("Success Rate (%)")
     ax.set_title(f"{player_name} - First Objective Success Rate")
     ax.set_ylim(0, 100)
 
     # Add percentage labels on bars
-    for bar, percentage, count in zip(
-        bars, percentages, [first_objs[key] for key in obj_keys]
-    ):
+    for bar, percentage, count in zip(bars, percentages, [first_objs[key] for key in obj_keys]):
         height = bar.get_height()
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
@@ -288,9 +277,7 @@ def plot_first_objectives(player_name: str, objective_data: ObjectiveData) -> No
     plt.show()
 
 
-def plot_objective_win_correlation(
-    player_name: str, objective_data: ObjectiveData
-) -> None:
+def plot_objective_win_correlation(player_name: str, objective_data: ObjectiveData) -> None:
     """
     Plot correlation between objective control and winning.
     """
@@ -315,19 +302,13 @@ def plot_objective_win_correlation(
             continue
 
         # Calculate win rates based on objective control
-        wins_ahead = sum(
-            1 for p, e, w in zip(player_objs, enemy_objs, wins) if p > e and w
-        )
+        wins_ahead = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p > e and w)
         games_ahead = sum(1 for p, e in zip(player_objs, enemy_objs) if p > e)
 
-        wins_behind = sum(
-            1 for p, e, w in zip(player_objs, enemy_objs, wins) if p < e and w
-        )
+        wins_behind = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p < e and w)
         games_behind = sum(1 for p, e in zip(player_objs, enemy_objs) if p < e)
 
-        wins_even = sum(
-            1 for p, e, w in zip(player_objs, enemy_objs, wins) if p == e and w
-        )
+        wins_even = sum(1 for p, e, w in zip(player_objs, enemy_objs, wins) if p == e and w)
         games_even = sum(1 for p, e in zip(player_objs, enemy_objs) if p == e)
 
         win_rates_ahead.append(wins_ahead / max(games_ahead, 1) * 100)
@@ -337,15 +318,9 @@ def plot_objective_win_correlation(
     x = np.arange(len(objectives))
     width = 0.25
 
-    bars1 = ax.bar(
-        x - width, win_rates_ahead, width, label="When Ahead", color="green", alpha=0.7
-    )
-    bars2 = ax.bar(
-        x, win_rates_even, width, label="When Even", color="yellow", alpha=0.7
-    )
-    bars3 = ax.bar(
-        x + width, win_rates_behind, width, label="When Behind", color="red", alpha=0.7
-    )
+    bars1 = ax.bar(x - width, win_rates_ahead, width, label="When Ahead", color="green", alpha=0.7)
+    bars2 = ax.bar(x, win_rates_even, width, label="When Even", color="yellow", alpha=0.7)
+    bars3 = ax.bar(x + width, win_rates_behind, width, label="When Behind", color="red", alpha=0.7)
 
     ax.set_ylabel("Win Rate (%)")
     ax.set_xlabel("Objectives")
@@ -376,12 +351,8 @@ def plot_objective_win_correlation(
 def main():
     """Main function for objective analysis visualization."""
 
-    parser = argparse.ArgumentParser(
-        description="Generate objective analysis visualizations"
-    )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser = argparse.ArgumentParser(description="Generate objective analysis visualizations")
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -441,9 +412,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(

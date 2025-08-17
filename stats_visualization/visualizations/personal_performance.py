@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 
 class _TrendPoint(TypedDict):
@@ -14,8 +14,8 @@ def plot_performance_trends(
     matches_dir: str = "matches",
     *,
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ):
     """Plot KDA and win rate trends over time for a player.
 
@@ -61,9 +61,7 @@ def plot_performance_trends(
         trend_points.append({"kda": kda, "cumulative_win_rate": win_rate})
 
     if not trend_points:
-        print(
-            f"No valid data to plot for {player_name}. Debug: matches={len(matches)}, usable=0"
-        )
+        print(f"No valid data to plot for {player_name}. Debug: matches={len(matches)}, usable=0")
         plt.figure(figsize=(8, 4))
         plt.suptitle(f"No valid data to plot for {player_name}")
         plt.show()
@@ -147,8 +145,8 @@ def load_player_match_data(
     matches_dir: str = "matches",
     *,
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> list[dict[str, Any]]:
     """
     Load match data for a specific player.
@@ -183,8 +181,8 @@ def plot_champion_performance(
     matches_dir: str = "matches",
     *,
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ):
     """
     Plot performance statistics by champion.
@@ -257,15 +255,11 @@ def plot_champion_performance(
 
     # Sort by games played and take top 8
     top_champions = dict(
-        sorted(filtered_champions.items(), key=lambda x: x[1]["games"], reverse=True)[
-            :8
-        ]
+        sorted(filtered_champions.items(), key=lambda x: x[1]["games"], reverse=True)[:8]
     )
 
     champions = list(top_champions.keys())
-    win_rates = [
-        stats["wins"] / stats["games"] * 100 for stats in top_champions.values()
-    ]
+    win_rates = [stats["wins"] / stats["games"] * 100 for stats in top_champions.values()]
     avg_kdas = [stats["total_kda"] / stats["games"] for stats in top_champions.values()]
     games_played = [stats["games"] for stats in top_champions.values()]
 
@@ -309,8 +303,8 @@ def plot_role_performance(
     matches_dir: str = "matches",
     *,
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ):
     """
     Plot performance statistics by role/position.
@@ -365,21 +359,15 @@ def plot_role_performance(
         stats["total_gold"] += player_data.get("goldEarned", 0)
 
     # Filter roles with at least 1 game
-    filtered_roles = {
-        role: stats for role, stats in role_stats.items() if stats["games"] >= 1
-    }
+    filtered_roles = {role: stats for role, stats in role_stats.items() if stats["games"] >= 1}
 
     if not filtered_roles:
         print(f"No role data found for {player_name}")
         return
 
     roles = list(filtered_roles.keys())
-    win_rates = [
-        stats["wins"] / stats["games"] * 100 for stats in filtered_roles.values()
-    ]
-    avg_kdas = [
-        stats["total_kda"] / stats["games"] for stats in filtered_roles.values()
-    ]
+    win_rates = [stats["wins"] / stats["games"] * 100 for stats in filtered_roles.values()]
+    avg_kdas = [stats["total_kda"] / stats["games"] for stats in filtered_roles.values()]
     games_played = [stats["games"] for stats in filtered_roles.values()]
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
@@ -414,9 +402,7 @@ def plot_role_performance(
     ax3.set_xlabel("Role")
 
     # Average damage by role
-    avg_damages = [
-        stats["total_damage"] / stats["games"] for stats in filtered_roles.values()
-    ]
+    avg_damages = [stats["total_damage"] / stats["games"] for stats in filtered_roles.values()]
     ax4.bar(roles, avg_damages, color="purple", alpha=0.7)
     ax4.set_ylabel("Average Damage to Champions")
     ax4.set_title("Average Damage by Role")
@@ -454,9 +440,7 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate personal performance visualizations"
-    )
+    parser = argparse.ArgumentParser(description="Generate personal performance visualizations")
     parser.add_argument(
         "game_name", type=str, help="The player's in-game name (IGN) (e.g., Frowtch)"
     )

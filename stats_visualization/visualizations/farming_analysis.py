@@ -16,6 +16,7 @@ import sys
 
 # Load environment variables from config.env if present
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv(dotenv_path="config.env")
 
@@ -33,8 +34,8 @@ def extract_economy_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> EconomyData:
     """
     Extract economy and farming data for a specific player.
@@ -212,9 +213,7 @@ def plot_farming_performance(player_name: str, economy_data: EconomyData) -> Non
         else:
             win_rates.append(0)
 
-    bars = ax4.bar(
-        categories, win_rates, color=["red", "orange", "yellow", "green"], alpha=0.7
-    )
+    bars = ax4.bar(categories, win_rates, color=["red", "orange", "yellow", "green"], alpha=0.7)
     ax4.set_ylabel("Win Rate (%)")
     ax4.set_xlabel("CS/min Performance")
     ax4.set_title(f"{player_name} - Win Rate by CS Performance")
@@ -362,9 +361,7 @@ def plot_role_economy_comparison(player_name: str, economy_data: EconomyData) ->
         return
 
     # Filter roles with at least 2 games
-    filtered_roles = {
-        role: data for role, data in role_data.items() if data["games"] >= 2
-    }
+    filtered_roles = {role: data for role, data in role_data.items() if data["games"] >= 2}
 
     if not filtered_roles:
         print(f"No roles with enough games for {player_name}")
@@ -445,9 +442,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate farming and economy analysis visualizations"
     )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -507,9 +502,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(

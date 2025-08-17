@@ -9,7 +9,7 @@ Analyzes first jungle clear times for jungle role games using timeline data.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from collections import defaultdict
 import argparse
 import sys
@@ -90,9 +90,7 @@ def extract_jungle_clear_data(
             jungle_data["wins"].append(player_data.get("win", False))
 
             game_duration = match["info"].get("gameDuration", 0)
-            jungle_data["game_durations"].append(
-                game_duration / 60
-            )  # Convert to minutes
+            jungle_data["game_durations"].append(game_duration / 60)  # Convert to minutes
 
             # Calculate early game efficiency (neutral minions killed as proxy)
             neutral_cs = player_data.get("neutralMinionsKilled", 0)
@@ -163,9 +161,7 @@ def calculate_clear_time_from_timeline(
                 killer_id = event.get("killerId")
                 if killer_id == participant_id:
                     monster_type = event.get("monsterType", "")
-                    jungle_kills.append(
-                        {"timestamp": timestamp, "monster_type": monster_type}
-                    )
+                    jungle_kills.append({"timestamp": timestamp, "monster_type": monster_type})
 
     # Determine if a full clear was completed
     # Look for key jungle monsters: Blue, Red, Gromp, Krugs, Raptors, Wolves
@@ -227,9 +223,7 @@ def estimate_clear_time_from_stats(player_data: Dict) -> Optional[float]:
 from stats_visualization.viz_types import JungleData
 
 
-def plot_jungle_clear_analysis(
-    player_name: str, jungle_data: JungleData | Dict[str, Any]
-):
+def plot_jungle_clear_analysis(player_name: str, jungle_data: JungleData | Dict[str, Any]):
     """
     Create comprehensive jungle clear time visualizations.
 
@@ -242,16 +236,12 @@ def plot_jungle_clear_analysis(
         return
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
-    fig.suptitle(
-        f"{player_name} - Jungle Clear Analysis", fontsize=16, fontweight="bold"
-    )
+    fig.suptitle(f"{player_name} - Jungle Clear Analysis", fontsize=16, fontweight="bold")
 
     # 1. First Clear Time Distribution
     if jungle_data["first_clear_times"]:
         clear_times = jungle_data["first_clear_times"]
-        ax1.hist(
-            clear_times, bins=10, alpha=0.7, color="forestgreen", edgecolor="black"
-        )
+        ax1.hist(clear_times, bins=10, alpha=0.7, color="forestgreen", edgecolor="black")
         ax1.set_xlabel("First Clear Time (minutes)")
         ax1.set_ylabel("Frequency")
         ax1.set_title("First Clear Time Distribution")
@@ -268,7 +258,9 @@ def plot_jungle_clear_analysis(
         ax1.legend()
 
         # Add statistics text
-        stats_text = f"Games: {len(clear_times)}\nAvg: {avg_time:.2f} min\nBest: {min(clear_times):.2f} min"
+        stats_text = (
+            f"Games: {len(clear_times)}\nAvg: {avg_time:.2f} min\nBest: {min(clear_times):.2f} min"
+        )
         ax1.text(
             0.02,
             0.98,
@@ -292,9 +284,7 @@ def plot_jungle_clear_analysis(
     # 2. Clear Time by Champion
     if jungle_data["first_clear_times"] and jungle_data["champions"]:
         champion_times = defaultdict(list)
-        for time, champ in zip(
-            jungle_data["first_clear_times"], jungle_data["champions"]
-        ):
+        for time, champ in zip(jungle_data["first_clear_times"], jungle_data["champions"]):
             champion_times[champ].append(time)
 
         # Only show champions with 2+ games
@@ -307,9 +297,7 @@ def plot_jungle_clear_analysis(
             avg_times = [np.mean(times) for times in filtered_champions.values()]
             colors = plt.cm.Set3(np.linspace(0, 1, len(champ_names)))
 
-            bars = ax2.bar(
-                champ_names, avg_times, color=colors, alpha=0.8, edgecolor="black"
-            )
+            bars = ax2.bar(champ_names, avg_times, color=colors, alpha=0.8, edgecolor="black")
             ax2.set_xlabel("Champion")
             ax2.set_ylabel("Average Clear Time (minutes)")
             ax2.set_title("Average Clear Time by Champion")
@@ -477,9 +465,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze jungle clear times for League of Legends matches"
     )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -531,9 +517,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(
@@ -580,9 +564,7 @@ def main():
         print(f"Games with clear time data: {len(clear_times)}")
         print(f"Average first clear time: {np.mean(clear_times):.2f} minutes")
         print(f"Best clear time: {min(clear_times):.2f} minutes")
-        print(
-            f"Fastest clearing champion: {jungle_data['champions'][np.argmin(clear_times)]}"
-        )
+        print(f"Fastest clearing champion: {jungle_data['champions'][np.argmin(clear_times)]}")
     else:
         print("No clear time data available")
         print("Note: This analysis requires timeline data or uses estimation methods")

@@ -34,7 +34,7 @@ def filter_matches(
     matches: Sequence[dict[str, Any]],
     *,
     include_aram: bool = False,
-    allowed_queue_ids: Iterable[int] | None = None,
+    allowed_queue_ids: Optional[Iterable[int]] = None,
     allowed_game_modes: Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return filtered list of match dicts.

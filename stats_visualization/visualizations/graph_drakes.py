@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import argparse
+from typing import Optional
 import sys
 
 # Load environment variables from config.env if present
@@ -30,8 +31,8 @@ def extract_drake_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> DrakeData:
     """
     Extract drake-related data for a specific player from match history.
@@ -84,9 +85,7 @@ def extract_drake_data(
             player_drakes = 0
             enemy_drakes = 0
             for team in match["info"]["teams"]:
-                dragon_kills = (
-                    team.get("objectives", {}).get("dragon", {}).get("kills", 0)
-                )
+                dragon_kills = team.get("objectives", {}).get("dragon", {}).get("kills", 0)
                 if team["teamId"] == player_team_id:
                     player_drakes = dragon_kills
                 else:
@@ -144,14 +143,9 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
 
     # Drake control distribution
     drake_diff = [
-        p - e
-        for p, e in zip(
-            drake_data["player_team_drakes"], drake_data["enemy_team_drakes"]
-        )
+        p - e for p, e in zip(drake_data["player_team_drakes"], drake_data["enemy_team_drakes"])
     ]
-    ax2.hist(
-        drake_diff, bins=range(-6, 7), alpha=0.7, color="purple", edgecolor="black"
-    )
+    ax2.hist(drake_diff, bins=range(-6, 7), alpha=0.7, color="purple", edgecolor="black")
     ax2.axvline(0, color="red", linestyle="--", label="Even Drake Control")
     ax2.set_xlabel("Drake Advantage (Player Team - Enemy Team)")
     ax2.set_ylabel("Number of Games")
@@ -245,9 +239,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate personal drake statistics visualization (Summoner's Rift by default – ARAM excluded unless --include-aram)"
     )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -302,9 +294,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(

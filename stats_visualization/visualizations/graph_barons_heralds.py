@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import argparse
+from typing import Optional
 import sys
 
 # Load environment variables from config.env if present
@@ -30,8 +31,8 @@ def extract_baron_herald_data(
     player_puuid: str,
     matches_dir: str = "matches",
     include_aram: bool = False,
-    queue_filter: list[int] | None = None,
-    game_mode_whitelist: list[str] | None = None,
+    queue_filter: Optional[list[int]] = None,
+    game_mode_whitelist: Optional[list[str]] = None,
 ) -> BaronHeraldData:
     """
     Extract baron and herald data for a specific player from match history.
@@ -82,9 +83,7 @@ def extract_baron_herald_data(
 
         objective_data["total_games"] += 1
         game_duration = match["info"].get("gameDuration", 0)
-        objective_data["game_durations"].append(
-            game_duration / 60
-        )  # Convert to minutes
+        objective_data["game_durations"].append(game_duration / 60)  # Convert to minutes
         objective_data["wins"].append(player_won)
 
         # Extract team objective counts
@@ -114,9 +113,7 @@ def extract_baron_herald_data(
     return objective_data
 
 
-def plot_baron_herald_analysis(
-    player_name: str, objective_data: BaronHeraldData
-) -> None:
+def plot_baron_herald_analysis(player_name: str, objective_data: BaronHeraldData) -> None:
     """
     Create comprehensive baron and herald analysis visualization.
     """
@@ -177,13 +174,9 @@ def plot_baron_herald_analysis(
     # Baron control distribution
     baron_diff = [
         p - e
-        for p, e in zip(
-            objective_data["player_team_barons"], objective_data["enemy_team_barons"]
-        )
+        for p, e in zip(objective_data["player_team_barons"], objective_data["enemy_team_barons"])
     ]
-    ax2.hist(
-        baron_diff, bins=range(-4, 5), alpha=0.7, color="purple", edgecolor="black"
-    )
+    ax2.hist(baron_diff, bins=range(-4, 5), alpha=0.7, color="purple", edgecolor="black")
     ax2.axvline(0, color="red", linestyle="--", label="Even Baron Control")
     ax2.set_xlabel("Baron Advantage (Player Team - Enemy Team)")
     ax2.set_ylabel("Number of Games")
@@ -194,13 +187,9 @@ def plot_baron_herald_analysis(
     # Herald control distribution
     herald_diff = [
         p - e
-        for p, e in zip(
-            objective_data["player_team_heralds"], objective_data["enemy_team_heralds"]
-        )
+        for p, e in zip(objective_data["player_team_heralds"], objective_data["enemy_team_heralds"])
     ]
-    ax3.hist(
-        herald_diff, bins=range(-3, 4), alpha=0.7, color="orange", edgecolor="black"
-    )
+    ax3.hist(herald_diff, bins=range(-3, 4), alpha=0.7, color="orange", edgecolor="black")
     ax3.axvline(0, color="red", linestyle="--", label="Even Herald Control")
     ax3.set_xlabel("Herald Advantage (Player Team - Enemy Team)")
     ax3.set_ylabel("Number of Games")
@@ -212,21 +201,15 @@ def plot_baron_herald_analysis(
     # Calculate total major objectives (barons + heralds)
     player_total_obj = [
         b + h
-        for b, h in zip(
-            objective_data["player_team_barons"], objective_data["player_team_heralds"]
-        )
+        for b, h in zip(objective_data["player_team_barons"], objective_data["player_team_heralds"])
     ]
     enemy_total_obj = [
         b + h
-        for b, h in zip(
-            objective_data["enemy_team_barons"], objective_data["enemy_team_heralds"]
-        )
+        for b, h in zip(objective_data["enemy_team_barons"], objective_data["enemy_team_heralds"])
     ]
 
     win_rates = {"Behind": [], "Even": [], "Ahead": []}
-    for p_obj, e_obj, win in zip(
-        player_total_obj, enemy_total_obj, objective_data["wins"]
-    ):
+    for p_obj, e_obj, win in zip(player_total_obj, enemy_total_obj, objective_data["wins"]):
         if p_obj < e_obj:
             win_rates["Behind"].append(win)
         elif p_obj == e_obj:
@@ -282,9 +265,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate personal baron and herald statistics visualization (Summoner's Rift by default – ARAM excluded unless --include-aram)"
     )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -336,9 +317,7 @@ def main():
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(
