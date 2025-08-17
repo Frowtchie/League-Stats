@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0 - 2025-08-17
+- First stable release. Introduces Streamlit GUI prototype (`stats_visualization/gui_app.py`) for interactive chart generation, filtering (ranked only, ARAM inclusion, queue & mode filters), and modal image gallery with download.
+- Adds MkDocs documentation site structure (`docs/` with architecture, metrics, visualization catalog, CLI reference, troubleshooting, etc.) and configuration (`mkdocs.yml`).
+- Centralized filtering across CLI and visualization scripts (queue IDs, ranked-only shortcut, game mode whitelist, ARAM toggle).
+- Bulk visualization generation workflow exposed via GUI using existing `analyze.generate_all_visuals` logic.
+- General polish: lint compliance, version synchronization, robust import handling, output directory hygiene improvements.
 
 ## 0.5.0 - 2025-08-17
 - Modernized project structure: added `pyproject.toml` for PEP 621/517/518 compliance and tool configuration.

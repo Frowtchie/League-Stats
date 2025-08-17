@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "league-stats"
-version = "0.4.0"  # Keep in sync with stats_visualization/__init__.py __version__
+version = "1.0.0"  # Keep in sync with stats_visualization/__init__.py __version__
 description = "League of Legends personal stats and visualization toolkit."
 authors = [
     { name = "Frowtchie" }

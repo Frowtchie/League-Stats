@@ -4,7 +4,7 @@ A Python application for analyzing personal League of Legends performance from m
 
 ## Version
 
-Current version: **0.3.0**  
+Current version: **1.0.0**  
 See the [Changelog](docs/changelog.md) for release notes (new, unreleased changes are tracked under the Unreleased heading there).
 
 ## Features
