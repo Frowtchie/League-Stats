@@ -7,9 +7,7 @@ from typing import Any, Dict
 # Add visualization scripts and project root to path
 sys.path.insert(
     0,
-    os.path.join(
-        os.path.dirname(__file__), "..", "stats_visualization", "visualizations"
-    ),
+    os.path.join(os.path.dirname(__file__), "..", "stats_visualization", "visualizations"),
 )
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -31,9 +29,7 @@ class TestAramFiltering(unittest.TestCase):
         self.aram_match = {
             "info": {
                 "gameMode": "ARAM",
-                "participants": [
-                    {"puuid": "player_puuid", "teamId": 100, "win": False}
-                ],
+                "participants": [{"puuid": "player_puuid", "teamId": 100, "win": False}],
                 "teams": [
                     {"teamId": 100, "objectives": {"dragon": {"kills": 5}}},
                     {"teamId": 200, "objectives": {"dragon": {"kills": 0}}},

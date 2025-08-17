@@ -87,9 +87,7 @@ class TestPersonalPerformance(unittest.TestCase):
         ) as mock_load_data, patch("matplotlib.pyplot.show") as mock_show:
             mock_load_data.return_value = mock_data
             print("[TEST DEBUG] plot_champion_performance mock_data:", mock_data)
-            personal_performance.plot_champion_performance(
-                self.test_puuid, "TestPlayer"
-            )
+            personal_performance.plot_champion_performance(self.test_puuid, "TestPlayer")
             print(
                 "[TEST DEBUG] plot_champion_performance mock_show.called:",
                 mock_show.called,

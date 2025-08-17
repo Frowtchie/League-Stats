@@ -7,9 +7,7 @@ from typing import Any, Dict
 # Add the stats_visualization directory to the path
 sys.path.insert(
     0,
-    os.path.join(
-        os.path.dirname(__file__), "..", "stats_visualization", "visualizations"
-    ),
+    os.path.join(os.path.dirname(__file__), "..", "stats_visualization", "visualizations"),
 )
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -100,9 +98,7 @@ class TestJungleClearAnalysis(unittest.TestCase):
             }
         }
 
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
     def test_extract_jungle_clear_data_jungle_game(self, mock_load_matches):
         from jungle_clear_analysis import extract_jungle_clear_data
 
@@ -119,9 +115,7 @@ class TestJungleClearAnalysis(unittest.TestCase):
         # Check that clear time was calculated
         self.assertGreater(result["first_clear_times"][0], 0)
 
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
     def test_extract_jungle_clear_data_non_jungle_game(self, mock_load_matches):
         from jungle_clear_analysis import extract_jungle_clear_data
 
@@ -173,14 +167,10 @@ class TestJungleClearAnalysis(unittest.TestCase):
         # Should return None for very low CS (likely not proper jungling)
         self.assertIsNone(clear_time)
 
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
     @patch("matplotlib.pyplot.show")
     @patch("matplotlib.pyplot.savefig")
-    def test_plot_jungle_clear_analysis_with_data(
-        self, mock_savefig, mock_show, mock_load_matches
-    ):
+    def test_plot_jungle_clear_analysis_with_data(self, mock_savefig, mock_show, mock_load_matches):
         from jungle_clear_analysis import (
             plot_jungle_clear_analysis,
             extract_jungle_clear_data,
@@ -196,13 +186,9 @@ class TestJungleClearAnalysis(unittest.TestCase):
         # Verify that savefig was called (plot was generated)
         mock_savefig.assert_called_once()
 
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
     @patch("builtins.print")
-    def test_plot_jungle_clear_analysis_no_jungle_games(
-        self, mock_print, mock_load_matches
-    ):
+    def test_plot_jungle_clear_analysis_no_jungle_games(self, mock_print, mock_load_matches):
         from jungle_clear_analysis import (
             plot_jungle_clear_analysis,
             extract_jungle_clear_data,
@@ -221,15 +207,9 @@ class TestJungleClearAnalysis(unittest.TestCase):
     @patch(
         "stats_visualization.visualizations.jungle_clear_analysis.league.ensure_matches_for_player"
     )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.league.fetch_puuid_by_riot_id"
-    )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.league.load_player_config"
-    )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.league.fetch_puuid_by_riot_id")
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.league.load_player_config")
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
     def test_main_function_success(
         self,
         mock_load_matches,
@@ -261,21 +241,13 @@ class TestJungleClearAnalysis(unittest.TestCase):
         # Clean up environment variable
         del os.environ["RIOT_API_TOKEN"]
 
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.league.load_player_config"
-    )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files"
-    )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.plot_jungle_clear_analysis"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.league.load_player_config")
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.analyze.load_match_files")
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.plot_jungle_clear_analysis")
     @patch(
         "stats_visualization.visualizations.jungle_clear_analysis.league.ensure_matches_for_player"
     )
-    @patch(
-        "stats_visualization.visualizations.jungle_clear_analysis.league.fetch_puuid_by_riot_id"
-    )
+    @patch("stats_visualization.visualizations.jungle_clear_analysis.league.fetch_puuid_by_riot_id")
     @patch("builtins.print")
     def test_main_function_no_matches(
         self,
@@ -304,9 +276,7 @@ class TestJungleClearAnalysis(unittest.TestCase):
         try:
             main()
             mock_plot.assert_not_called()
-            mock_print.assert_any_call(
-                "Failed to fetch or find any matches for TestPlayer#EUW."
-            )
+            mock_print.assert_any_call("Failed to fetch or find any matches for TestPlayer#EUW.")
         finally:
             sys.argv = original_argv
             del os.environ["RIOT_API_TOKEN"]

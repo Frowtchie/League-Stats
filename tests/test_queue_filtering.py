@@ -7,9 +7,7 @@ from typing import Any, Dict
 # Add visualization scripts and project root to path
 sys.path.insert(
     0,
-    os.path.join(
-        os.path.dirname(__file__), "..", "stats_visualization", "visualizations"
-    ),
+    os.path.join(os.path.dirname(__file__), "..", "stats_visualization", "visualizations"),
 )
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

@@ -25,9 +25,7 @@ from stats_visualization import analyze
 from stats_visualization.viz_types import EarlyGameData
 
 
-def extract_early_game_data(
-    player_puuid: str, matches_dir: str = "matches"
-) -> EarlyGameData:
+def extract_early_game_data(player_puuid: str, matches_dir: str = "matches") -> EarlyGameData:
     """
     Extract early game and first blood data for a specific player from match history.
 
@@ -85,9 +83,7 @@ def extract_early_game_data(
         # Using available stats as proxies for early game performance
         kills = player_data.get("kills", 0)
         deaths = player_data.get("deaths", 0)
-        cs = player_data.get("totalMinionsKilled", 0) + player_data.get(
-            "neutralMinionsKilled", 0
-        )
+        cs = player_data.get("totalMinionsKilled", 0) + player_data.get("neutralMinionsKilled", 0)
 
         early_game_data["early_kills"].append(kills)
         early_game_data["early_deaths"].append(deaths)
@@ -122,9 +118,7 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
         early_game_data["first_blood_deaths"],
         early_game_data["first_tower_kills"],
     ]
-    fb_percentages = [
-        count / early_game_data["total_games"] * 100 for count in fb_counts
-    ]
+    fb_percentages = [count / early_game_data["total_games"] * 100 for count in fb_counts]
     colors = ["green", "blue", "red", "orange"]
 
     bars1 = ax1.bar(fb_categories, fb_percentages, color=colors, alpha=0.7)
@@ -155,9 +149,7 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
         edgecolor="black",
     )
     avg_kills = np.mean(early_game_data["early_kills"])
-    ax2.axvline(
-        avg_kills, color="blue", linestyle="--", label=f"Average: {avg_kills:.1f}"
-    )
+    ax2.axvline(avg_kills, color="blue", linestyle="--", label=f"Average: {avg_kills:.1f}")
     ax2.set_xlabel("Kills per Game")
     ax2.set_ylabel("Number of Games")
     ax2.set_title(f"{player_name} - Kill Distribution")
@@ -173,9 +165,7 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
         edgecolor="black",
     )
     avg_deaths = np.mean(early_game_data["early_deaths"])
-    ax3.axvline(
-        avg_deaths, color="blue", linestyle="--", label=f"Average: {avg_deaths:.1f}"
-    )
+    ax3.axvline(avg_deaths, color="blue", linestyle="--", label=f"Average: {avg_deaths:.1f}")
     ax3.set_xlabel("Deaths per Game")
     ax3.set_ylabel("Number of Games")
     ax3.set_title(f"{player_name} - Death Distribution")
@@ -189,18 +179,14 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     for i, (fb_kill, fb_assist, fb_death, win) in enumerate(
         zip(
             [early_game_data["first_blood_kills"] > 0] * early_game_data["total_games"],
-            [early_game_data["first_blood_assists"] > 0]
-            * early_game_data["total_games"],
-            [early_game_data["first_blood_deaths"] > 0]
-            * early_game_data["total_games"],
+            [early_game_data["first_blood_assists"] > 0] * early_game_data["total_games"],
+            [early_game_data["first_blood_deaths"] > 0] * early_game_data["total_games"],
             early_game_data["wins"],
         )
     ):
         # This is a simplified approach - in reality we'd need per-game first blood data
         # For now, we'll use kill/death ratio as proxy for early game performance
-        early_kd = early_game_data["early_kills"][i] / max(
-            early_game_data["early_deaths"][i], 1
-        )
+        early_kd = early_game_data["early_kills"][i] / max(early_game_data["early_deaths"][i], 1)
         if early_kd > 1:
             fb_involved.append(win)
         else:
@@ -248,9 +234,7 @@ def plot_first_blood_analysis(player_name: str, early_game_data: EarlyGameData) 
     plt.show()
 
 
-def plot_role_early_game_comparison(
-    player_name: str, early_game_data: EarlyGameData
-) -> None:
+def plot_role_early_game_comparison(player_name: str, early_game_data: EarlyGameData) -> None:
     """
     Compare early game performance across different roles.
     """
@@ -271,9 +255,7 @@ def plot_role_early_game_comparison(
             role_data[role]["games"] += 1
 
     # Filter roles with at least 2 games
-    filtered_roles = {
-        role: data for role, data in role_data.items() if data["games"] >= 2
-    }
+    filtered_roles = {role: data for role, data in role_data.items() if data["games"] >= 2}
 
     if not filtered_roles:
         print(f"No roles with enough games for comparison")
@@ -333,9 +315,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate personal early game and first blood statistics visualization"
     )
-    parser.add_argument(
-        "game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)"
-    )
+    parser.add_argument("game_name", type=str, help="Riot in-game name (IGN) (e.g. frowtch)")
     parser.add_argument("tag_line", type=str, help="Riot tag line (e.g. blue)")
     parser.add_argument(
         "-m",
@@ -344,9 +324,7 @@ def main() -> None:
         default="matches",
         help="Directory containing match JSON files",
     )
-    parser.add_argument(
-        "-r", "--role-comparison", action="store_true", help="Show role comparison"
-    )
+    parser.add_argument("-r", "--role-comparison", action="store_true", help="Show role comparison")
     parser.add_argument(
         "-O",
         "--no-clean-output",
@@ -368,9 +346,7 @@ def main() -> None:
 
     if not player_puuid:
         try:
-            player_puuid = league.fetch_puuid_by_riot_id(
-                args.game_name, args.tag_line, token
-            )
+            player_puuid = league.fetch_puuid_by_riot_id(args.game_name, args.tag_line, token)
             print(f"Fetched PUUID for {player_display}")
         except Exception:
             print(

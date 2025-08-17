@@ -64,9 +64,7 @@ class TestGenerateAllVisuals(unittest.TestCase):
         originals: list[tuple[object, str, object]] = []
         from types import ModuleType
 
-        def _swap(
-            module: ModuleType, attr: str, replacement: object
-        ) -> None:  # noqa: WPS430
+        def _swap(module: ModuleType, attr: str, replacement: object) -> None:  # noqa: WPS430
             originals.append((module, attr, getattr(module, attr)))
             setattr(module, attr, replacement)
 
@@ -89,9 +87,7 @@ class TestGenerateAllVisuals(unittest.TestCase):
             _swap(_bh, "plot_baron_herald_analysis", _plot("barons_heralds"))
 
             # Objectives
-            _swap(
-                _oa, "extract_objective_data", lambda *a, **k: {"ok": True}
-            )  # noqa: E731
+            _swap(_oa, "extract_objective_data", lambda *a, **k: {"ok": True})  # noqa: E731
             _swap(_oa, "plot_objective_control", _plot("objectives_control"))
             _swap(_oa, "plot_first_objectives", _plot("objectives_first"))
             _swap(
@@ -101,9 +97,7 @@ class TestGenerateAllVisuals(unittest.TestCase):
             )
 
             # Farming / economy
-            _swap(
-                _fa, "extract_economy_data", lambda *a, **k: {"ok": True}
-            )  # noqa: E731
+            _swap(_fa, "extract_economy_data", lambda *a, **k: {"ok": True})  # noqa: E731
             _swap(_fa, "plot_farming_performance", _plot("farming"))
             _swap(_fa, "plot_gold_efficiency", _plot("gold_efficiency"))
             _swap(_fa, "plot_role_economy_comparison", _plot("role_economy"))
