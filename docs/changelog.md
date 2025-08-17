@@ -1,20 +1,14 @@
 # Changelog
 
-## [Unreleased]
-### Planned for 0.5.0 (Draft)
-- Performance: Optional async/batched Riot API fetches; lightweight caching metrics.
-- Data Quality: Validation report for missing timeline segments & selective refetch.
-- New Visualizations: Role impact (gold/xp share), damage composition, lane phase CS diff, objective participation heatmap.
-- Configuration: Central `player_config.yml` supporting multiple profiles + aliases.
-- CLI UX: Progress bars for fetch, colored summaries, `--json` output option.
-- Packaging: PyPI-ready (`pyproject.toml`), console scripts entry points.
-- Extensibility: Plugin discovery via entry points for custom visualizations.
-- CI: GitHub Actions workflow (lint, tests, mypy, coverage badge).
-- Docs: Add glossary (IGN, Riot ID, PUUID, Queue ID) & updated architecture diagram.
-- Reliability: Smarter rate limit backoff with jitter & structured log events.
+
+## 0.5.0 - 2025-08-17
+- Modernized project structure: added `pyproject.toml` for PEP 621/517/518 compliance and tool configuration.
+- Version synchronization: all version numbers (`pyproject.toml`, `__init__.py`, and docstrings) are now kept in sync and updated together for each release.
+- Improved `.gitignore`: added `logs/` and other generated folders to prevent accidental commits of large or sensitive files.
+- Changelog and release workflow: clarified and automated changelog and version bumping for future releases.
+- General code and documentation cleanup: fixed indentation, removed stray code, and improved docstring placement for clarity and maintainability.
 
 ## 0.4.0 - 2025-08-16
-### Added
 - Centralized match filtering (ARAM exclusion by default, `--include-aram`, `--queue`, `--ranked-only`, `--modes`) extended to `analyze.py` (parity with visualization scripts).
 - `analyze.py` flag `--generate-visuals` to produce the full visualization suite post textual analysis (with `--no-clean-output` opt-out of initial cleanup).
 - Short flag aliases across CLI (`-i/-p/-t/-m/-d/-l/-n/-f/-X/-a/-q/-R/-M/-g/-O`, plus visualization script equivalents like `-c`, `-D`, `-r`) for faster interactive use.
