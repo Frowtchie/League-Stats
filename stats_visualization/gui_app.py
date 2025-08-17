@@ -273,7 +273,7 @@ def main():  # noqa: C901 (complexity acceptable for UI glue)
     else:
         cols_per_row = 3
         for i in range(0, len(images), cols_per_row):
-            row = images[i : i + cols_per_row]
+            row = images[i: i + cols_per_row]
             cols = st.columns(len(row))
             for col, img_path in zip(cols, row):
                 try:
