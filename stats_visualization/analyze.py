@@ -11,7 +11,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any, Iterable
+from typing import Dict, List, Any, Iterable, Optional
 from collections import Counter
 import logging
 
@@ -32,8 +32,8 @@ def apply_analysis_filters(
     matches: List[Dict[str, Any]],
     *,
     include_aram: bool = False,
-    queue_filter: Iterable[int] | None = None,
-    game_mode_whitelist: Iterable[str] | None = None,
+    queue_filter: Optional[Iterable[int]] = None,
+    game_mode_whitelist: Optional[Iterable[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Apply centralized match filtering for analyze CLI.
 
@@ -91,9 +91,7 @@ def load_match_files(matches_dir: str = "matches") -> List[Dict[str, Any]]:
     return matches
 
 
-def analyze_player_performance(
-    matches: List[Dict[str, Any]], player_puuid: str
-) -> Dict[str, Any]:
+def analyze_player_performance(matches: List[Dict[str, Any]], player_puuid: str) -> Dict[str, Any]:
     """
     Analyze performance statistics for a specific player.
 
@@ -213,18 +211,18 @@ def analyze_team_performance(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
         if "teams" in info:
             for team in info["teams"]:
                 objectives = team.get("objectives", {})
-                stats["objectives"]["dragons"]["total"] += objectives.get(
-                    "dragon", {}
-                ).get("kills", 0)
-                stats["objectives"]["barons"]["total"] += objectives.get(
-                    "baron", {}
-                ).get("kills", 0)
-                stats["objectives"]["heralds"]["total"] += objectives.get(
-                    "riftHerald", {}
-                ).get("kills", 0)
-                stats["objectives"]["towers"]["total"] += objectives.get(
-                    "tower", {}
-                ).get("kills", 0)
+                stats["objectives"]["dragons"]["total"] += objectives.get("dragon", {}).get(
+                    "kills", 0
+                )
+                stats["objectives"]["barons"]["total"] += objectives.get("baron", {}).get(
+                    "kills", 0
+                )
+                stats["objectives"]["heralds"]["total"] += objectives.get("riftHerald", {}).get(
+                    "kills", 0
+                )
+                stats["objectives"]["towers"]["total"] += objectives.get("tower", {}).get(
+                    "kills", 0
+                )
 
     # Calculate averages
     if stats["total_matches"] > 0:
@@ -266,9 +264,7 @@ def print_player_report(stats: Dict[str, Any], player_name: str):
     print(f"   Average Damage: {stats.get('average_damage', 0):,.0f}")
     print(f"   Average Gold: {stats.get('average_gold', 0):,.0f}")
     avg_duration = stats.get("average_game_duration", 0)
-    print(
-        f"   Average Game Duration: {int(avg_duration // 60):.0f}m {int(avg_duration % 60):.0f}s"
-    )
+    print(f"   Average Game Duration: {int(avg_duration // 60):.0f}m {int(avg_duration % 60):.0f}s")
 
 
 def print_team_report(stats: Dict[str, Any]):
@@ -459,9 +455,7 @@ def main():
         last_error = None
         for gn_try, tg_try in variants:
             try:
-                logger.debug(
-                    "Attempting PUUID fetch with variant %s#%s", gn_try, tg_try
-                )
+                logger.debug("Attempting PUUID fetch with variant %s#%s", gn_try, tg_try)
                 player_puuid = league.fetch_puuid_by_riot_id(gn_try, tg_try, token)
                 break
             except Exception as e:
@@ -528,9 +522,7 @@ def main():
                             queue_filter=queue_filter,
                             game_mode_whitelist=args.modes,
                         )
-                        new_player_matches = _count_player_matches(
-                            matches, player_puuid
-                        )
+                        new_player_matches = _count_player_matches(matches, player_puuid)
                         new_total_files = len(matches)
                         delta_player = new_player_matches - prev_player_matches
                         delta_files = new_total_files - prev_total_files
@@ -680,9 +672,7 @@ def generate_all_visuals(
                 matches_dir,
                 include_aram=include_aram,
                 queue_filter=list(queue_filter) if queue_filter else None,
-                game_mode_whitelist=(
-                    list(game_mode_whitelist) if game_mode_whitelist else None
-                ),
+                game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
             ),
         ),
     )
@@ -699,9 +689,7 @@ def generate_all_visuals(
                 matches_dir,
                 include_aram=include_aram,
                 queue_filter=list(queue_filter) if queue_filter else None,
-                game_mode_whitelist=(
-                    list(game_mode_whitelist) if game_mode_whitelist else None
-                ),
+                game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
             ),
         ),
     )
@@ -718,9 +706,7 @@ def generate_all_visuals(
                 matches_dir,
                 include_aram=include_aram,
                 queue_filter=list(queue_filter) if queue_filter else None,
-                game_mode_whitelist=(
-                    list(game_mode_whitelist) if game_mode_whitelist else None
-                ),
+                game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
             ),
         ),
     )
@@ -737,9 +723,7 @@ def generate_all_visuals(
                 matches_dir,
                 include_aram=include_aram,
                 queue_filter=list(queue_filter) if queue_filter else None,
-                game_mode_whitelist=(
-                    list(game_mode_whitelist) if game_mode_whitelist else None
-                ),
+                game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
             ),
         ),
     )
@@ -750,9 +734,7 @@ def generate_all_visuals(
             matches_dir,
             include_aram=include_aram,
             queue_filter=list(queue_filter) if queue_filter else None,
-            game_mode_whitelist=(
-                list(game_mode_whitelist) if game_mode_whitelist else None
-            ),
+            game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
         )
     except Exception:  # pragma: no cover
         _obj_data_cache = None
@@ -775,9 +757,7 @@ def generate_all_visuals(
             matches_dir,
             include_aram=include_aram,
             queue_filter=list(queue_filter) if queue_filter else None,
-            game_mode_whitelist=(
-                list(game_mode_whitelist) if game_mode_whitelist else None
-            ),
+            game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
         )
     except Exception:  # pragma: no cover
         _econ = None
@@ -812,18 +792,14 @@ def generate_all_visuals(
                 matches_dir,
                 include_aram=include_aram,
                 queue_filter=list(queue_filter) if queue_filter else None,
-                game_mode_whitelist=(
-                    list(game_mode_whitelist) if game_mode_whitelist else None
-                ),
+                game_mode_whitelist=(list(game_mode_whitelist) if game_mode_whitelist else None),
             ),
         ),
     )
 
     # Summary
     successes = sum(1 for _, r in results if r == "ok")
-    print(
-        f"Visualization generation complete: {successes}/{len(results)} succeeded. Details: "
-    )
+    print(f"Visualization generation complete: {successes}/{len(results)} succeeded. Details: ")
     for name, status in results:
         print(f"  - {name}: {status}")
 
