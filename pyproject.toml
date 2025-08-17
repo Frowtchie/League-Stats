@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "league-stats"
+version = "0.4.0"  # Keep in sync with stats_visualization/__init__.py __version__
+description = "League of Legends personal stats and visualization toolkit."
+authors = [
+    { name = "Frowtchie" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "python-dotenv",
+    "requests"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "mypy",
+    "black",
+    "flake8"
+]
+
+[tool.setuptools.packages.find]
+where = ["stats_visualization"]
+
+[tool.mypy]
+python_version = "3.8"
+
+[tool.black]
+line-length = 100
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]

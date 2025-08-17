@@ -6,11 +6,9 @@ Personal first blood statistics visualization for League of Legends match data.
 Analyzes early game performance and first blood statistics from personal match history.
 """
 
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any
 import argparse
 import sys
 import os

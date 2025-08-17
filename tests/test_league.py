@@ -2,7 +2,6 @@ import unittest
 import sys
 import os
 from unittest.mock import patch, Mock, mock_open
-import json
 
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))

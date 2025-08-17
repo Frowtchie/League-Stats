@@ -72,7 +72,7 @@ def load_match_files(matches_dir: str = "matches") -> List[Dict[str, Any]]:
     Returns:
         List[Dict]: List of match data dictionaries
     """
-    matches = []
+    matches: List[Dict[str, Any]] = []
     matches_path = Path(matches_dir)
 
     if not matches_path.exists():
@@ -104,7 +104,7 @@ def analyze_player_performance(
     Returns:
         Dict[str, Any]: Performance statistics
     """
-    stats = {
+    stats: Dict[str, Any] = {
         "total_games": 0,
         "wins": 0,
         "losses": 0,
@@ -180,7 +180,7 @@ def analyze_team_performance(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Team performance statistics
     """
-    stats = {
+    stats: Dict[str, Any] = {
         "total_matches": len(matches),
         "game_modes": Counter(),
         "game_types": Counter(),
@@ -265,8 +265,9 @@ def print_player_report(stats: Dict[str, Any], player_name: str):
     print(f"\n💰 Performance Metrics:")
     print(f"   Average Damage: {stats.get('average_damage', 0):,.0f}")
     print(f"   Average Gold: {stats.get('average_gold', 0):,.0f}")
+    avg_duration = stats.get("average_game_duration", 0)
     print(
-        f"   Average Game Duration: {stats.get('average_game_duration', 0)//60:.0f}m {stats.get('average_game_duration', 0)%60:.0f}s"
+        f"   Average Game Duration: {int(avg_duration // 60):.0f}m {int(avg_duration % 60):.0f}s"
     )
 
 

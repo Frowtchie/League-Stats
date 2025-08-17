@@ -1,67 +1,100 @@
 import unittest
-import sys
-import os
-from unittest.mock import patch, MagicMock
-import json
+from unittest.mock import patch
+from typing import Any, Dict, List
+import stats_visualization.visualizations.graph_drakes as graph_drakes
 
-# Add the stats_visualization directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'stats_visualization', 'visualizations'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 class TestGraphDrakes(unittest.TestCase):
-    def setUp(self):
-        # Mock match data
-        self.mock_match_data = {
-            'info': {
-                'participants': [
-                    {'puuid': 'test_puuid', 'teamId': 100, 'win': True}
-                ],
-                'teams': [
+    def tearDown(self):
+        patch.stopall()
+
+    def setUp(self) -> None:
+        # Use a consistent test PUUID
+        self.test_puuid: str = "player_puuid"
+        self.mock_match_data: Dict[str, Any] = {
+            "info": {
+                "gameMode": "CLASSIC",
+                "queueId": 420,
+                "gameCreation": 1700000000000,
+                "gameDuration": 1800,
+                "participants": [
                     {
-                        'teamId': 100,
-                        'objectives': {
-                            'dragon': {'kills': 3}
-                        }
+                        "puuid": self.test_puuid,
+                        "teamId": 100,
+                        "kills": 5,
+                        "deaths": 2,
+                        "assists": 8,
+                        "championName": "TestChamp",
+                        "teamPosition": "ADC",
+                        "totalDamageDealtToChampions": 25000,
+                        "goldEarned": 15000,
+                        "win": True,
                     },
                     {
-                        'teamId': 200, 
-                        'objectives': {
-                            'dragon': {'kills': 1}
-                        }
-                    }
-                ]
+                        "puuid": "other_puuid",
+                        "teamId": 200,
+                        "kills": 2,
+                        "deaths": 5,
+                        "assists": 3,
+                        "championName": "OtherChamp",
+                        "teamPosition": "SUPPORT",
+                        "totalDamageDealtToChampions": 5000,
+                        "goldEarned": 8000,
+                        "win": False,
+                    },
+                ],
+                "teams": [
+                    {"teamId": 100, "objectives": {"dragon": {"kills": 3}}},
+                    {"teamId": 200, "objectives": {"dragon": {"kills": 1}}},
+                ],
             }
         }
 
-    @patch('graph_drakes.analyze.load_match_files')
-    def test_extract_drake_data(self, mock_load_matches):
-        from graph_drakes import extract_drake_data
-        
-        mock_load_matches.return_value = [self.mock_match_data]
-        
-        result = extract_drake_data('test_puuid')
-        
-        self.assertEqual(result['total_games'], 1)
-        self.assertEqual(result['player_team_drakes'], [3])
-        self.assertEqual(result['enemy_team_drakes'], [1])
-        self.assertEqual(result['wins'], [True])
+    def test_extract_drake_data(self) -> None:
+        match_list: List[Dict[str, Any]] = [self.mock_match_data]
+        # Patch load_match_files within the scope of this test so match_list is defined
+        with patch(
+            "stats_visualization.visualizations.graph_drakes.analyze.load_match_files",
+            return_value=match_list,
+        ):
+            result = graph_drakes.extract_drake_data(
+                self.test_puuid,
+                matches_dir="matches",
+                include_aram=True,
+                queue_filter=[420],
+            )
+            self.assertIn("total_games", result)
+            self.assertIn("player_team_drakes", result)
+            self.assertIn("enemy_team_drakes", result)
+            self.assertIn("wins", result)
+            self.assertEqual(result["total_games"], 1)
+            self.assertEqual(result["player_team_drakes"], [3])
+            self.assertEqual(result["enemy_team_drakes"], [1])
+            self.assertEqual(result["wins"], [True])
 
-    @patch("matplotlib.pyplot.show")
-    @patch('graph_drakes.extract_drake_data')
-    def test_plot_drake_analysis(self, mock_extract, mock_show):
-        from graph_drakes import plot_drake_analysis
-        
-        mock_data = {
-            'total_games': 2,
-            'player_team_drakes': [3, 2],
-            'enemy_team_drakes': [1, 2],
-            'wins': [True, False],
-            'game_durations': [30, 25]
+    def test_plot_drake_analysis(self) -> None:
+        # Provide mock data with at least one game to trigger plotting
+        mock_data: Dict[str, Any] = {
+            "total_games": 2,
+            "player_team_drakes": [3, 2],
+            "enemy_team_drakes": [1, 2],
+            "wins": [True, False],
+            "game_durations": [30, 25],
         }
-        mock_extract.return_value = mock_data
-        
-        plot_drake_analysis('TestPlayer', mock_data)
-        mock_show.assert_called_once()
+        # Add all required keys for the plot function
+        for key in [
+            "player_team_drakes",
+            "enemy_team_drakes",
+            "wins",
+            "game_durations",
+            "total_games",
+        ]:
+            if key not in mock_data:
+                mock_data[key] = [] if key != "total_games" else 0
+        with patch("matplotlib.pyplot.show") as mock_show:  # type: ignore[arg-type]
+            graph_drakes.plot_drake_analysis("TestPlayer", mock_data)  # type: ignore[arg-type]
+            self.assertTrue(mock_show.called)
+
 
 if __name__ == "__main__":
     unittest.main()

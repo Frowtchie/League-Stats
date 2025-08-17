@@ -9,7 +9,7 @@ Analyzes first jungle clear times for jungle role games using timeline data.
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from collections import defaultdict
 import argparse
 import sys

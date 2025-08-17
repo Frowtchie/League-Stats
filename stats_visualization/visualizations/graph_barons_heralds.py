@@ -6,12 +6,10 @@ Personal baron and herald statistics visualization for League of Legends match d
 Analyzes baron and rift herald control from personal match history.
 """
 
-import json
 import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any
 import argparse
 import sys
 

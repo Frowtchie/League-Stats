@@ -6,7 +6,6 @@ Setup script for League Stats project.
 Automates the installation and configuration process.
 """
 
-import os
 import sys
 import subprocess
 from pathlib import Path

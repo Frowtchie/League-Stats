@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 from matplotlib.figure import Figure  # type: ignore
-from typing import Iterable, Sequence, Any, Dict, List
-import os
+from typing import Iterable, Sequence, Any
 
 
 def clean_output(output_dir: str | Path = "output") -> int:
@@ -56,15 +55,25 @@ def filter_matches(
     for m in matches:
         info = m.get("info") or {}
         if not info:
+            print(f"[DEBUG][filter_matches] Skipping match: missing 'info' field: {m}")
             continue
         game_mode = info.get("gameMode")
         if not include_aram and game_mode == "ARAM":
+            print(f"[DEBUG][filter_matches] Skipping match: ARAM excluded: {info}")
             continue
         if q_set is not None and info.get("queueId") not in q_set:
+            print(
+                f"[DEBUG][filter_matches] Skipping match: queueId {info.get('queueId')} not in allowed set {q_set}: {info}"
+            )
             continue
         if gm_set is not None and game_mode not in gm_set:
+            print(
+                f"[DEBUG][filter_matches] Skipping match: gameMode {game_mode} not in allowed set {gm_set}: {info}"
+            )
             continue
+        print(f"[DEBUG][filter_matches] Keeping match: {info}")
         out.append(m)
+    print(f"[DEBUG][filter_matches] Returning {len(out)} matches out of {len(matches)}")
     return out
 
 

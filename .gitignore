@@ -1,3 +1,5 @@
+# Ignore logs directory
+logs/
 # OS-specific files
 .DS_Store
 Thumbs.db

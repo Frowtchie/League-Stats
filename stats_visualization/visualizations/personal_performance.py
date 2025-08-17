@@ -30,6 +30,9 @@ def plot_performance_trends(
     )
     if not matches:
         print(f"No matches found for {player_name}")
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No matches found for {player_name}")
+        plt.show()
         return
 
     # Sort chronologically
@@ -61,6 +64,9 @@ def plot_performance_trends(
         print(
             f"No valid data to plot for {player_name}. Debug: matches={len(matches)}, usable=0"
         )
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No valid data to plot for {player_name}")
+        plt.show()
         return
 
     game_numbers = list(range(1, len(trend_points) + 1))
@@ -111,11 +117,9 @@ Personal performance visualization module for League of Legends match data.
 Creates charts and graphs for individual player analysis.
 """
 
-import json
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 import argparse
 import sys
 import os
@@ -195,6 +199,9 @@ def plot_champion_performance(
 
     if not matches:
         print(f"No matches found for {player_name}")
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No matches found for {player_name}")
+        plt.show()
         return
 
     champion_stats = {}
@@ -243,6 +250,9 @@ def plot_champion_performance(
 
     if not filtered_champions:
         print(f"No champions with enough games for {player_name}")
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No champions with enough games for {player_name}")
+        plt.show()
         return
 
     # Sort by games played and take top 8

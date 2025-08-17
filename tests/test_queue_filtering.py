@@ -2,6 +2,7 @@ import unittest
 import sys
 import os
 from unittest.mock import patch
+from typing import Any, Dict
 
 # Add visualization scripts and project root to path
 sys.path.insert(
@@ -14,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestQueueFiltering(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # Ranked Solo (420)
         self.ranked_solo_match = {
             "info": {

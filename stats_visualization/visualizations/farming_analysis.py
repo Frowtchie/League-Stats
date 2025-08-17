@@ -6,12 +6,10 @@ Farming and economy analysis visualization module for League of Legends match da
 Analyzes CS per minute, gold efficiency, and economic performance.
 """
 
-import json
 import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any
 from collections import defaultdict
 import argparse
 import sys

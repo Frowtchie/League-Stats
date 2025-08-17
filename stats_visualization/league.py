@@ -1,3 +1,15 @@
+"""
+Fetches data from the Riot Games API for a list of matches and saves the data as JSON files.
+-----------------------------------------------------------------
+Author: Frowtch
+License: MPL 2.0
+Version: 0.4.0  # Keep in sync with stats_visualization/__init__.py and pyproject.toml
+Maintainer: Frowtch
+Contact: Frowtch#0001 on Discord
+Status: Production
+"""
+
+
 def ensure_matches_for_player(
     puuid: str,
     token: str,
@@ -20,7 +32,8 @@ def ensure_matches_for_player(
         int: Number of match files now present for the player
     """
     from pathlib import Path
-    import glob
+
+    # import glob  # Removed unused import
 
     matches_path = Path(matches_dir)
     matches_path.mkdir(exist_ok=True)
@@ -32,10 +45,7 @@ def ensure_matches_for_player(
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             # Check if player is in this match
-            if any(
-                p.get("puuid") == puuid
-                for p in data.get("info", {}).get("participants", [])
-            ):
+            if any(p.get("puuid") == puuid for p in data.get("info", {}).get("participants", [])):
                 player_match_count += 1
         except Exception:
             continue
@@ -43,7 +53,8 @@ def ensure_matches_for_player(
         return player_match_count
     # Fetch and save matches
     logger.info(
-        f"No or not enough matches found for player {puuid[:10]}. Fetching {fetch_count} matches..."
+        f"No or not enough matches found for player {puuid[:10]}. "
+        f"Fetching {fetch_count} matches..."
     )
     match_ids = fetch_match_history(puuid, fetch_count, token)
     process_matches(match_ids, token, use_cache=False)
@@ -54,10 +65,7 @@ def ensure_matches_for_player(
         try:
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            if any(
-                p.get("puuid") == puuid
-                for p in data.get("info", {}).get("participants", [])
-            ):
+            if any(p.get("puuid") == puuid for p in data.get("info", {}).get("participants", [])):
                 player_match_count += 1
         except Exception:
             continue
@@ -84,23 +92,23 @@ import os
 import argparse
 import logging
 import sys
-import time
 from typing import List, Dict, Optional
 import requests
 from pathlib import Path
+
 
 # Load environment variables from config.env if present
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path="config.env")
 
+
 # Constants
 MATCHES_DIR = "matches"
 API_BASE_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/"
-TIMELINE_API_URL = (
-    "https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
-)
+TIMELINE_API_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}/timeline"
 MATCH_HISTORY_URL = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/"
+
 
 # Set up logging
 logging.basicConfig(
@@ -134,7 +142,10 @@ def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30):
     return response
 
 
-def validate_match_data(data: Dict) -> bool:
+from typing import Any
+
+
+def validate_match_data(data: Dict[str, Any]) -> bool:
     """
     Validate that match data has the expected structure.
 
@@ -144,8 +155,7 @@ def validate_match_data(data: Dict) -> bool:
     Returns:
         bool: True if valid, False otherwise
     """
-    if not isinstance(data, dict):
-        return False
+    # Dict[str, Any] is always a dict, so skip isinstance check
 
     # Check for required fields
     required_fields = ["info", "metadata"]
@@ -173,7 +183,7 @@ def load_player_config() -> Dict[str, str]:
     # (These should be moved to environment variables in production)
     if not puuids:
         logger.warning(
-            "No PUUID environment variables found. Will fetch PUUIDs from Riot API as needed."
+            "No PUUID environment variables found. " "Will fetch PUUIDs from Riot API as needed."
         )
         puuids = {
             "Frowtch": "hu7LrPvdnAMQSYttZlgmBKtyQ4EV2nW_24YFZP5xeQgayOhqcsj8oez8ksHprMRW1scJC7ENFyD-FQ",
@@ -217,12 +227,11 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
         if not isinstance(data, dict) or "puuid" not in data:
             raise ValueError("Invalid response format - missing PUUID")
 
-        puuid = data["puuid"]
+        puuid = str(data["puuid"])  # type: ignore
         logger.info(f"Successfully retrieved PUUID for {game_name}#{tag_line}")
         return puuid
-
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
+        if e.response is not None and e.response.status_code == 404:
             raise ValueError(f"Player '{game_name}#{tag_line}' not found")
         else:
             logger.error(f"HTTP error fetching PUUID: {e}")
@@ -235,7 +244,7 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
         raise
 
 
-def fetch_match_data(match_id: str, token: str) -> Dict:
+def fetch_match_data(match_id: str, token: str) -> Dict[str, Any]:
     """
     Fetches match data from the Riot Games API using requests library.
 
@@ -266,7 +275,7 @@ def fetch_match_data(match_id: str, token: str) -> Dict:
         raise
 
 
-def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict]:
+def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict[str, Any]]:
     """
     Fetches timeline data for a match from the Riot Games API.
 
@@ -289,13 +298,11 @@ def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict]:
         logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
         return None
     except ValueError as e:
-        logger.warning(
-            f"Failed to parse timeline JSON response for match {match_id}: {e}"
-        )
+        logger.warning(f"Failed to parse timeline JSON response for match {match_id}: {e}")
         return None
 
 
-def fetch_match_with_timeline(match_id: str, token: str) -> Dict:
+def fetch_match_with_timeline(match_id: str, token: str) -> Dict[str, Any]:
     """
     Fetches both match data and timeline data, combining them into a single response.
 
@@ -317,14 +324,12 @@ def fetch_match_with_timeline(match_id: str, token: str) -> Dict:
         match_data["timeline"] = timeline_data
         logger.info(f"Successfully combined match and timeline data for {match_id}")
     else:
-        logger.info(
-            f"Timeline data not available for {match_id}, proceeding with match data only"
-        )
+        logger.info(f"Timeline data not available for {match_id}, proceeding with match data only")
 
     return match_data
 
 
-def save_match_data(match_id: str, data: Dict) -> None:
+def save_match_data(match_id: str, data: Dict[str, Any]) -> None:
     """
     Saves match data to a JSON file.
 
@@ -344,7 +349,7 @@ def save_match_data(match_id: str, data: Dict) -> None:
         raise
 
 
-def load_cached_match_data(match_id: str) -> Optional[Dict]:
+def load_cached_match_data(match_id: str) -> Optional[Dict[str, Any]]:
     """
     Loads cached match data from a JSON file if it exists.
 
@@ -438,7 +443,7 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
         raise ValueError("Count must be positive")
 
     headers = {"X-Riot-Token": token}
-    all_match_ids = []
+    all_match_ids: List[str] = []
     start = 0
     remaining = count
     max_per_request = 100
@@ -450,12 +455,10 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
         try:
             response = make_api_request(url, headers)
             match_ids = response.json()
-            if not isinstance(match_ids, list):
-                raise ValueError("Expected list of match IDs, got different format")
+            # Ensure all elements are strings
+            match_ids: List[str] = [str(mid) for mid in match_ids]
             all_match_ids.extend(match_ids)
-            logger.info(
-                f"Fetched {len(match_ids)} match IDs (start={start}, count={batch_count})"
-            )
+            logger.info(f"Fetched {len(match_ids)} match IDs (start={start}, count={batch_count})")
             if len(match_ids) < batch_count:
                 # No more matches available
                 break
@@ -464,9 +467,7 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
         except requests.exceptions.HTTPError as e:
             if e.response is not None and e.response.status_code == 429:
                 retry_after = int(e.response.headers.get("Retry-After", "2"))
-                logger.warning(
-                    f"Rate limit hit (429). Sleeping for {retry_after} seconds..."
-                )
+                logger.warning(f"Rate limit hit (429). Sleeping for {retry_after} seconds...")
                 import time
 
                 time.sleep(retry_after)
@@ -478,9 +479,7 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
             logger.error(f"Failed to fetch match history: {e}")
             raise
         except ValueError as e:
-            logger.error(
-                f"Failed to parse or validate JSON response for match history: {e}"
-            )
+            logger.error(f"Failed to parse or validate JSON response for match history: {e}")
             raise
 
     logger.info(f"Total match IDs fetched: {len(all_match_ids)}")
@@ -491,15 +490,9 @@ def main():
     """
     Main function to fetch and save match data.
     """
-    parser = argparse.ArgumentParser(
-        description="Fetch match data for a player by Riot ID."
-    )
-    parser.add_argument(
-        "game_name", type=str, help="The player's game name (e.g., Frowtch)."
-    )
-    parser.add_argument(
-        "tag_line", type=str, help="The player's tag line (e.g., blue)."
-    )
+    parser = argparse.ArgumentParser(description="Fetch match data for a player by Riot ID.")
+    parser.add_argument("game_name", type=str, help="The player's game name (e.g., Frowtch).")
+    parser.add_argument("tag_line", type=str, help="The player's tag line (e.g., blue).")
     parser.add_argument("count", type=int, help="The number of matches to fetch.")
     parser.add_argument(
         "--log-level",
@@ -533,7 +526,8 @@ def main():
     try:
         puuid = fetch_puuid_by_riot_id(game_name, tag_line, token)
         logger.info(
-            f"Starting fetch for player {game_name}#{tag_line} - {count} matches (cache: {'enabled' if use_cache else 'disabled'})"
+            f"Starting fetch for player {game_name}#{tag_line} - {count} matches "
+            f"(cache: {'enabled' if use_cache else 'disabled'})"
         )
 
         match_ids = fetch_match_history(puuid, count, token)

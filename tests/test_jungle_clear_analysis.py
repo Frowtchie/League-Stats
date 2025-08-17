@@ -1,8 +1,8 @@
 import unittest
 import sys
 import os
-from unittest.mock import patch, MagicMock
-import numpy as np
+from unittest.mock import patch
+from typing import Any, Dict
 
 # Add the stats_visualization directory to the path
 sys.path.insert(
@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestJungleClearAnalysis(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # Mock match data with jungle player
         self.mock_jungle_match = {
             "info": {

@@ -6,11 +6,10 @@ Personal kills statistics visualization for League of Legends match data.
 Analyzes kill performance and progression from personal match history.
 """
 
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict
 import datetime  # noqa: F401
 
 import argparse
@@ -49,13 +48,16 @@ def extract_kills_data(
     Returns:
         Dict containing kills statistics
     """
+    print(f"[DEBUG] extract_kills_data called with player_puuid={player_puuid}")
     raw_matches = analyze.load_match_files(matches_dir)
+    print(f"[DEBUG] [extract_kills_data] raw_matches loaded: {raw_matches}")
     matches = filter_matches(
         raw_matches,
         include_aram=include_aram,
         allowed_queue_ids=queue_filter,
         allowed_game_modes=game_mode_whitelist,
     )
+    print(f"[DEBUG] [extract_kills_data] matches after filter: {matches}")
     kills_data: KillsData = {
         "kills": [],
         "deaths": [],
@@ -68,63 +70,63 @@ def extract_kills_data(
         "wins": [],
         "total_games": 0,
     }
+    for match in matches:
+        print(f"[DEBUG] processing match: {match}")
 
+    # Always return kills_data, even if matches is empty
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
             continue
-
-        # Find player data in this match
         player_data = None
         for participant in match["info"]["participants"]:
             if participant.get("puuid") == player_puuid:
                 player_data = participant
                 break
-
         if not player_data:
             continue
-
         kills_data["total_games"] += 1
-
-        # Extract game info
         game_creation = match["info"].get("gameCreation", 0)
         if game_creation > 0:
             game_date = datetime.datetime.fromtimestamp(game_creation / 1000)
             kills_data["game_dates"].append(game_date)
         else:
             kills_data["game_dates"].append(datetime.datetime.now())
-
         game_duration = match["info"].get("gameDuration", 0)
-        kills_data["game_durations"].append(game_duration / 60)  # Convert to minutes
-
-        # Extract player stats
+        kills_data["game_durations"].append(game_duration / 60)
         kills = player_data.get("kills", 0)
         deaths = player_data.get("deaths", 0)
         assists = player_data.get("assists", 0)
-
         kills_data["kills"].append(kills)
         kills_data["deaths"].append(deaths)
         kills_data["assists"].append(assists)
-
-        # Calculate KDA ratio
         kda = (kills + assists) / max(deaths, 1)
         kills_data["kda_ratios"].append(kda)
-
-        # Calculate kill participation
         team_kills = 0
         player_team_id = player_data.get("teamId")
         if "participants" in match["info"]:
             for participant in match["info"]["participants"]:
                 if participant.get("teamId") == player_team_id:
                     team_kills += participant.get("kills", 0)
-
         kill_participation = (kills + assists) / max(team_kills, 1) * 100
         kills_data["kill_participation"].append(kill_participation)
-
-        # Other data
         kills_data["champions"].append(player_data.get("championName", "Unknown"))
         kills_data["wins"].append(player_data.get("win", False))
-
-    return kills_data
+    for key in [
+        "kills",
+        "deaths",
+        "assists",
+        "kda_ratios",
+        "kill_participation",
+        "game_dates",
+        "game_durations",
+        "champions",
+        "wins",
+        "total_games",
+    ]:
+        if key not in kills_data:
+            kills_data[key] = [] if key != "total_games" else 0
+    print(f"[DEBUG] extract_kills_data returning: {kills_data}")
+    return dict(kills_data)
 
 
 def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
@@ -133,6 +135,9 @@ def plot_kills_analysis(player_name: str, kills_data: KillsData) -> None:
     """
     if kills_data["total_games"] == 0:
         print(f"No games found for {player_name}")
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No games found for {player_name}")
+        plt.show()
         return
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))

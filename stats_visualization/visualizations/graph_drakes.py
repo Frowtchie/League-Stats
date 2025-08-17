@@ -6,12 +6,10 @@ Personal drake statistics visualization for League of Legends match data.
 Analyzes dragon control from personal match history.
 """
 
-import json
 import os
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any
 import argparse
 import sys
 
@@ -45,13 +43,16 @@ def extract_drake_data(
     Returns:
         Dict containing drake statistics
     """
+    print(f"[DEBUG] extract_drake_data called with player_puuid={player_puuid}")
     raw_matches = analyze.load_match_files(matches_dir)
+    print(f"[DEBUG] [extract_drake_data] raw_matches loaded: {raw_matches}")
     matches = filter_matches(
         raw_matches,
         include_aram=include_aram,
         allowed_queue_ids=queue_filter,
         allowed_game_modes=game_mode_whitelist,
     )
+    print(f"[DEBUG] [extract_drake_data] matches after filter: {matches}")
     drake_data: DrakeData = {
         "player_team_drakes": [],
         "enemy_team_drakes": [],
@@ -59,36 +60,29 @@ def extract_drake_data(
         "game_durations": [],
         "total_games": 0,
     }
+    for match in matches:
+        print(f"[DEBUG] processing match: {match}")
 
+    # Always return drake_data, even if matches is empty
     for match in matches:
         if "info" not in match or "participants" not in match["info"]:
             continue
-
-        # (Filtering already applied globally.)
-
-        # Find player's team ID
         player_team_id = None
         player_won = False
-
         for participant in match["info"]["participants"]:
             if participant.get("puuid") == player_puuid:
                 player_team_id = participant.get("teamId")
                 player_won = participant.get("win", False)
                 break
-
         if player_team_id is None:
             continue
-
         drake_data["total_games"] += 1
         game_duration = match["info"].get("gameDuration", 0)
-        drake_data["game_durations"].append(game_duration / 60)  # Convert to minutes
+        drake_data["game_durations"].append(game_duration / 60)
         drake_data["wins"].append(player_won)
-
-        # Extract team drake counts
         if "teams" in match["info"]:
             player_drakes = 0
             enemy_drakes = 0
-
             for team in match["info"]["teams"]:
                 dragon_kills = (
                     team.get("objectives", {}).get("dragon", {}).get("kills", 0)
@@ -97,11 +91,19 @@ def extract_drake_data(
                     player_drakes = dragon_kills
                 else:
                     enemy_drakes = dragon_kills
-
             drake_data["player_team_drakes"].append(player_drakes)
             drake_data["enemy_team_drakes"].append(enemy_drakes)
-
-    return drake_data
+    for key in [
+        "player_team_drakes",
+        "enemy_team_drakes",
+        "wins",
+        "game_durations",
+        "total_games",
+    ]:
+        if key not in drake_data:
+            drake_data[key] = [] if key != "total_games" else 0
+    print(f"[DEBUG] extract_drake_data returning: {drake_data}")
+    return dict(drake_data)
 
 
 def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
@@ -110,6 +112,9 @@ def plot_drake_analysis(player_name: str, drake_data: DrakeData) -> None:
     """
     if drake_data["total_games"] == 0:
         print(f"No games found for {player_name}")
+        plt.figure(figsize=(8, 4))
+        plt.suptitle(f"No games found for {player_name}")
+        plt.show()
         return
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))

@@ -7,12 +7,9 @@ Objective analysis visualization module for League of Legends match data.
 Analyzes and visualizes objective control and game impact for personal matches.
 """
 
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from collections import Counter, defaultdict
 
 import argparse
 import sys
