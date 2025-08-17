@@ -2,6 +2,9 @@
 requests>=2.31.0
 matplotlib>=3.5.0
 
+# For environment variable loading
+python-dotenv>=1.0.0
+
 # Development dependencies
 pytest>=7.0.0
 pytest-cov>=4.0.0
