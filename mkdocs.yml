@@ -1,0 +1,44 @@
+site_name: League Stats
+site_description: Personal League of Legends performance analytics
+site_url: https://Frowtchie.github.io/League-Stats/
+repo_name: Frowtchie/League-Stats
+repo_url: https://github.com/Frowtchie/League-Stats
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+    - toc.integrate
+    - navigation.sections
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep orange
+  icon:
+    repo: fontawesome/brands/github
+nav:
+  - Home: index.md
+  - Overview: overview.md
+  - Architecture: architecture.md
+  - Fetching Logic: fetching_logic.md
+  - Metrics: metrics_definitions.md
+  - Visualizations Catalog: visualizations_catalog.md
+  - CLI Reference: cli_reference.md
+  - CLI Cheatsheet: cli_cheatsheet.md
+  - Player Config: player_config.md
+  - Environment Setup: environment.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite
+  - footnotes
+  - def_list
+  - tables
+  - attr_list
+plugins:
+  - search

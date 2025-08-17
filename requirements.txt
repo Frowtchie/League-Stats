@@ -16,3 +16,8 @@ mypy>=1.0.0
 pandas>=1.5.0
 numpy>=1.21.0
 types-requests
+# Documentation (GitHub Pages)
+mkdocs>=1.5.0
+mkdocs-material>=9.5.0
+# GUI
+streamlit>=1.36.0
