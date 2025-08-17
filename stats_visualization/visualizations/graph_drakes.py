@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Optional, List, Any, Dict, TypedDict, cast
+from typing import Optional, List, TypedDict, cast
 from dotenv import load_dotenv
 from stats_visualization import league, analyze
 from stats_visualization.viz_types import DrakeData

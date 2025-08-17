@@ -15,13 +15,14 @@ from typing import Dict, List, Any, Iterable, Optional
 from collections import Counter
 import logging
 
-# Allow running as a script (python stats_visualization/analyze.py) by adding project root
+# Ensure project root on path early before local imports
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT)) if str(PROJECT_ROOT) not in sys.path else None
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from stats_visualization.utils import filter_matches  # noqa: E402
 
 logger = logging.getLogger(__name__)
-
-from stats_visualization.utils import filter_matches
 
 
 def apply_analysis_filters(

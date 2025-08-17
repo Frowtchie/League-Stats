@@ -15,9 +15,8 @@ import argparse
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Dict, Optional, List, Any, cast, Type, TypedDict
+from typing import Dict, Optional, List, cast, Type, TypedDict
 import datetime
-from dotenv import load_dotenv
 import warnings
 from collections import defaultdict
 from stats_visualization import league
@@ -76,7 +75,7 @@ def extract_kills_data(
     }
 
     for match in matches:
-        info_raw = match.get("info")
+        info_raw: object = match.get("info")
         if not isinstance(info_raw, dict):
             continue
         participants_raw = info_raw.get("participants")
@@ -300,7 +299,8 @@ def plot_detailed_performance(player_name: str, kills_data: KillsData) -> None:
     bp = ax2.boxplot(champion_kills, labels=champions, patch_artist=True)
 
     # Use a stable qualitative colormap available in all versions
-    colors = plt.cm.Set3(np.linspace(0, 1, len(champions)))
+    # Qualitative colormap for distinct champion colors
+    colors = plt.cm.get_cmap("Set3")(np.linspace(0, 1, len(champions)))
     for patch, color in zip(bp["boxes"], colors):
         patch.set_facecolor(color)
 
