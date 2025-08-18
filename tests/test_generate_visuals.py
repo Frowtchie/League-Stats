@@ -141,7 +141,7 @@ class TestGenerateAllVisuals(unittest.TestCase):
             }
             self.assertEqual(set(calls), expected_labels)
             self.assertEqual(len(calls), len(expected_labels))
-            self.assertIn("14/14 succeeded", output)
+            self.assertIn("15/15 succeeded", output)
         finally:
             for module, attr, original in originals:
                 setattr(module, attr, original)
