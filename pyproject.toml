@@ -30,12 +30,33 @@ dev = [
 where = ["stats_visualization"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_optional = true
+disable_error_code = ["attr-defined"]
+
+[mypy-matplotlib]
+ignore_missing_imports = true
+
+[mypy-numpy]
+ignore_missing_imports = true
 
 [tool.black]
 line-length = 100
 
+[tool.flake8]
+exclude = [".venv", "venv", "__pycache__", ".git"]
+max-line-length = 120
+ignore = ["E203"]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
-testpaths = ["tests"]
+addopts = "-ra -q -v"
+filterwarnings = [
+    "ignore:The 'labels' parameter of boxplot() has been renamed 'tick_labels' since Matplotlib 3.9; support for the old name will be dropped in 3.11.",
+    "ignore::matplotlib.MatplotlibDeprecationWarning"
+]
+python_files = ["tests/*.py"]

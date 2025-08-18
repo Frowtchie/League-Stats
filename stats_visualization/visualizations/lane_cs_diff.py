@@ -2,27 +2,28 @@
 # -*- coding: utf-8 -*-
 """Lane phase CS difference timeline visualization.
 
-Implements issue #12: Track lane phase performance using CS@10, CS@15 and
-lane opponent CS differences across matches.
+Tracks lane phase performance using CS@10, CS@15 and opponent CS
+differences.
 
 Opponent inference heuristic:
-    - Identify player's lane via participant.teamPosition (TOP, JUNGLE, MIDDLE, BOTTOM, UTILITY)
-    - Find opposing team participant with same lane (teamPosition) first.
-    - If no direct lane match, attempt fallback using dominant early lane presence
-      via timeline positional data (if available) — currently placeholder for future improvement.
+    - Identify lane via ``teamPosition`` (TOP, JUNGLE, MIDDLE, BOTTOM,
+        UTILITY)
+    - Find opposing team participant with same lane first.
+    - Future: infer via early lane presence from positional timeline.
 
-Diff sign convention:
-    diff = player_cs - opponent_cs (positive => player ahead)
+Diff sign convention::
 
-Output PNG: lane_cs_diff_<player>.png
+        diff = player_cs - opponent_cs  # positive => player ahead
 
-Future extensions (not implemented yet): XP diff, gold diff, percentile shading.
+Output PNG: ``lane_cs_diff_<player>.png``
+
+Planned (not yet implemented): XP diff, gold diff, percentile shading.
 """
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Iterable, cast, Mapping
+from typing import List, Optional, Dict, Any, Iterable, cast
 import sys
 import logging
 
@@ -31,7 +32,11 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 from stats_visualization import analyze
-from stats_visualization.utils import filter_matches, save_figure, sanitize_player
+from stats_visualization.utils import (
+    filter_matches,
+    save_figure,
+    sanitize_player,
+)
 from stats_visualization.viz_types import LaneCSDiffData
 
 logger = logging.getLogger(__name__)
@@ -66,27 +71,30 @@ def _infer_opponent(
 
 
 def _extract_snapshots_from_root_timeline(
-    match: Mapping[str, Any], participant_ids: List[int]
+    match: Dict[str, Any], participant_ids: List[int]
 ) -> Dict[int, Dict[int, Dict[str, int]]]:
-    """Return snapshots[min][participantId] = {cs,xp,gold} using root timeline frames.
+    """Return snapshots[min][pid] = {cs,xp,gold} via root timeline.
 
-    We walk the root-level match["timeline"]["info"]["frames"]. Each frame's participantFrames
-    contains cumulative values for minionsKilled, jungleMinionsKilled, xp, totalGold/currentGold.
-    We select the participantFrame closest to the target minute timestamp (minute*60*1000).
+    We walk ``match['timeline']['info']['frames']``. Each frame's
+    ``participantFrames`` has cumulative minionsKilled,
+    jungleMinionsKilled, xp and totalGold/currentGold. We select the
+    frame closest to the target minute timestamp (minute*60*1000).
     """
-    timeline = match.get("timeline")  # type: ignore[assignment]
-    if not isinstance(timeline, dict):  # type: ignore[unreachable]
+    timeline_obj = match.get("timeline")
+    if not isinstance(timeline_obj, dict):
         return {}
-    info = timeline.get("info")  # type: ignore[assignment]
-    if not isinstance(info, dict):  # type: ignore[unreachable]
+    info_obj = timeline_obj.get("info")
+    if not isinstance(info_obj, dict):
         return {}
-    frames_raw = info.get("frames")  # type: ignore[assignment]
-    if not isinstance(frames_raw, list):  # type: ignore[unreachable]
+    frames_raw = info_obj.get("frames")
+    if not isinstance(frames_raw, list):
         return {}
-    frames: List[Dict[str, Any]] = [
-        cast(Dict[str, Any], f) for f in frames_raw if isinstance(f, dict)
-    ]
-    result: Dict[int, Dict[int, Dict[str, int]]] = {m: {} for m in SNAP_MINUTES}
+    frames: List[Dict[str, Any]] = [cast(Dict[str, Any], f)
+                                    for f in frames_raw
+                                    if isinstance(f, dict)]
+    result: Dict[int, Dict[int, Dict[str, int]]] = {
+        m: {} for m in SNAP_MINUTES
+    }
     for minute in SNAP_MINUTES:
         target_ms = minute * 60_000
         best: Dict[int, Dict[str, int]] = {}
@@ -97,11 +105,11 @@ def _extract_snapshots_from_root_timeline(
             if not isinstance(ts, (int, float)):
                 continue
             delta = abs(int(ts) - target_ms)
-            p_frames = frame.get("participantFrames")  # type: ignore[assignment]
-            if not isinstance(p_frames, dict):  # type: ignore[unreachable]
+            p_frames = frame.get("participantFrames")
+            if not isinstance(p_frames, dict):
                 continue
             for pid_str, pf_raw in p_frames.items():
-                if not isinstance(pf_raw, dict):  # type: ignore[unreachable]
+                if not isinstance(pf_raw, dict):
                     continue
                 try:
                     pid = int(pid_str)
@@ -111,11 +119,24 @@ def _extract_snapshots_from_root_timeline(
                     continue
                 prev_delta = deltas.get(pid, 10**12)
                 if delta < prev_delta:
-                    cs = int(pf_raw.get("minionsKilled", 0)) + int(
-                        pf_raw.get("jungleMinionsKilled", 0)
+                    # Coerce values that may be absent or wrong type
+                    mk = pf_raw.get("minionsKilled")
+                    jmk = pf_raw.get("jungleMinionsKilled")
+                    xp_raw = pf_raw.get("xp")
+                    gold_primary = pf_raw.get(
+                        "totalGold", pf_raw.get("currentGold")
                     )
-                    xp = int(pf_raw.get("xp", 0))
-                    gold = int(pf_raw.get("totalGold", pf_raw.get("currentGold", 0)))
+                    if not isinstance(mk, (int, float)):
+                        mk = 0
+                    if not isinstance(jmk, (int, float)):
+                        jmk = 0
+                    if not isinstance(xp_raw, (int, float)):
+                        xp_raw = 0
+                    if not isinstance(gold_primary, (int, float)):
+                        gold_primary = 0
+                    cs = int(mk) + int(jmk)
+                    xp = int(xp_raw)
+                    gold = int(gold_primary)
                     best[pid] = {"cs": cs, "xp": xp, "gold": gold}
                     deltas[pid] = delta
         result[minute] = best
@@ -158,17 +179,20 @@ def extract_lane_cs_diff_data(
         "total_considered": 0,
     }
 
-    for match in sorted(matches, key=lambda m: m.get("info", {}).get("gameCreation", 0)):
+    for match in sorted(
+        matches,
+        key=lambda m: m.get("info", {}).get("gameCreation", 0),
+    ):
         info_obj = match.get("info")
         if not isinstance(info_obj, dict):
             continue
-        parts_raw = info_obj.get("participants")  # type: ignore[assignment]
-        if not isinstance(parts_raw, list):  # type: ignore[unreachable]
+        parts_raw = info_obj.get("participants")
+        if not isinstance(parts_raw, list):
             continue
         parts: List[Dict[str, Any]] = [
             cast(Dict[str, Any], p) for p in parts_raw if isinstance(p, dict)
         ]
-        player_part = None
+        player_part: Optional[Dict[str, Any]] = None
         for p in parts:
             if p.get("puuid") == player_puuid:
                 player_part = p
@@ -180,24 +204,20 @@ def extract_lane_cs_diff_data(
         if not opponent:
             data["opponent_missing"] += 1
             logger.debug(
-                "Skipping match %s: no opponent inferred", match.get("metadata", {}).get("matchId")
+                "Skipping match %s: no opponent inferred",
+                match.get("metadata", {}).get("matchId"),
             )
             continue
 
-        # Build lookup of participantId -> participant for quicker mapping
-        pid_map: Dict[int, Dict[str, Any]] = {}
-        for p in parts:
-            try:
-                pid_map[int(p.get("participantId", -1))] = p
-            except (ValueError, TypeError):
-                continue
         player_pid = player_part.get("participantId")
         opp_pid = opponent.get("participantId")
         if not isinstance(player_pid, int) or not isinstance(opp_pid, int):
             data["opponent_missing"] += 1
             continue
 
-        snapshots = _extract_snapshots_from_root_timeline(match, [player_pid, opp_pid])
+        snapshots = _extract_snapshots_from_root_timeline(
+            match, [player_pid, opp_pid]
+        )
         snap_player: Dict[int, Dict[str, int]] = {}
         snap_opp: Dict[int, Dict[str, int]] = {}
         for minute, pdata in snapshots.items():
@@ -205,7 +225,6 @@ def extract_lane_cs_diff_data(
                 snap_player[minute] = pdata[player_pid]
                 snap_opp[minute] = pdata[opp_pid]
 
-        # Require both minutes present for both participants
         if not all(m in snap_player and m in snap_opp for m in SNAP_MINUTES):
             data["opponent_missing"] += 1
             continue
@@ -246,7 +265,9 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.set_title(f"No lane phase CS diff data for {player_label}")
         save_figure(
-            fig, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff (empty)"
+            fig,
+            f"lane_cs_diff_{sanitize_player(player_label)}",
+            description="lane cs diff (empty)",
         )
         plt.close(fig)
         return
@@ -255,26 +276,60 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
 
     # Figure 1: CS diff timeline
     fig_cs, ax_cs = plt.subplots(figsize=(10, 5))
-    ax_cs.plot(x, data["diff10"], marker="o", label="CS Δ@10", color="#1f77b4")
-    ax_cs.plot(x, data["diff15"], marker="s", label="CS Δ@15", color="#ff7f0e")
+    ax_cs.plot(
+        x,
+        data["diff10"],
+        marker="o",
+        label="CS Δ@10",
+        color="#1f77b4",
+    )
+    ax_cs.plot(
+        x,
+        data["diff15"],
+        marker="s",
+        label="CS Δ@15",
+        color="#ff7f0e",
+    )
     if len(x) > 1:
         z10 = np.polyfit(x, data["diff10"], 1)
         z15 = np.polyfit(x, data["diff15"], 1)
-        ax_cs.plot(x, np.poly1d(z10)(x), "--", color="#1f77b4", alpha=0.5)
-        ax_cs.plot(x, np.poly1d(z15)(x), "--", color="#ff7f0e", alpha=0.5)
+        ax_cs.plot(
+            x,
+            np.poly1d(z10)(x),
+            "--",
+            color="#1f77b4",
+            alpha=0.5,
+        )
+        ax_cs.plot(
+            x,
+            np.poly1d(z15)(x),
+            "--",
+            color="#ff7f0e",
+            alpha=0.5,
+        )
     ax_cs.axhline(0, color="black", linewidth=1)
     ax_cs.set_xlabel("Match Index (chronological)")
-    ax_cs.set_ylabel("CS Difference (player - opponent)")
-    ax_cs.set_title(f"{player_label} Lane Phase CS Diff (Positive = Ahead)")
+    ax_cs.set_ylabel("CS Diff (player - opp)")
+    ax_cs.set_title(
+        f"{player_label} Lane Phase CS Diff (Positive = Ahead)"
+    )
     # Legend outside bottom to avoid covering data
     handles_cs, labels_cs = ax_cs.get_legend_handles_labels()
     # Add trend line legends
-    handles_cs.append(Line2D([0], [0], linestyle="--", color="#1f77b4", alpha=0.5))
+    handles_cs.append(
+        Line2D([0], [0], linestyle="--", color="#1f77b4", alpha=0.5)
+    )
     labels_cs.append("Trend CS Δ@10")
-    handles_cs.append(Line2D([0], [0], linestyle="--", color="#ff7f0e", alpha=0.5))
+    handles_cs.append(
+        Line2D([0], [0], linestyle="--", color="#ff7f0e", alpha=0.5)
+    )
     labels_cs.append("Trend CS Δ@15")
     ax_cs.legend(
-        handles_cs, labels_cs, loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=len(handles_cs)
+        handles_cs,
+        labels_cs,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.12),
+        ncol=len(handles_cs),
     )
     ax_cs.grid(alpha=0.3)
     mean10 = np.mean(data["diff10"]) if data["diff10"] else 0
@@ -284,7 +339,7 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
         f"Mean CS Δ@10: {mean10:.1f}\nMean CS Δ@15: {mean15:.1f}"
     )
     # Move stats box outside plotting area (top-left margin)
-    fig_cs.subplots_adjust(top=0.80)  # create space above axes
+    fig_cs.subplots_adjust(top=0.80)  # space above axes
     fig_cs.text(
         0.01,
         0.985,
@@ -292,10 +347,14 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
         va="top",
         ha="left",
         fontsize=10,
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"),
+        bbox=dict(
+            boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"
+        ),
     )
     save_figure(
-        fig_cs, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff timeline"
+        fig_cs,
+        f"lane_cs_diff_{sanitize_player(player_label)}",
+        description="lane cs diff timeline",
     )
     plt.close(fig_cs)
 
@@ -346,20 +405,30 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
         ax_rg.axhline(0, color="black", linewidth=1)
         ax_rg.set_xlabel("Match Index (chronological)")
         ax_rg.set_ylabel("XP / Gold Difference")
-        ax_rg.set_title(f"{player_label} Lane Phase XP & Gold Diffs (Positive = Ahead)")
+        ax_rg.set_title(
+            f"{player_label} Lane Phase XP & Gold Diffs (Positive = Ahead)"
+        )
 
         # Add legend and grid
-        ax_rg.legend(loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=2)
+        ax_rg.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.20),
+            ncol=2,
+        )
         ax_rg.grid(alpha=0.3)
 
         # Prepare stats text
         mxp10 = np.mean(data["xp_diff10"]) if data["xp_diff10"] else 0
         mgold10 = np.mean(data["gold_diff10"]) if data["gold_diff10"] else 0
-        rg_text = (
-            f"Games: {len(x)}\nSkipped: {data['opponent_missing']}"
-            + (f"\nMean XP Δ@10: {mxp10:.0f}" if data["xp_diff10"] else "")
-            + (f"\nMean Gold Δ@10: {mgold10:.0f}" if data["gold_diff10"] else "")
-        )
+        parts = [
+            f"Games: {len(x)}",
+            f"Skipped: {data['opponent_missing']}",
+        ]
+        if data["xp_diff10"]:
+            parts.append(f"Mean XP Δ@10: {mxp10:.0f}")
+        if data["gold_diff10"]:
+            parts.append(f"Mean Gold Δ@10: {mgold10:.0f}")
+        rg_text = "\n".join(parts)
 
         # Move stats box outside plotting area (top-left margin)
         fig_rg.subplots_adjust(top=0.80)  # ensure room
@@ -370,7 +439,9 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
             va="top",
             ha="left",
             fontsize=10,
-            bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"),
+            bbox=dict(
+                boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"
+            ),
         )
 
         # Save figure
@@ -383,13 +454,24 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
 
 
 def main() -> None:  # pragma: no cover - CLI wrapper
-    parser = argparse.ArgumentParser(description="Lane phase CS / XP / Gold diff timeline")
+    parser = argparse.ArgumentParser(
+        description="Lane phase CS / XP / Gold diff timeline"
+    )
     parser.add_argument("IGN", help="In-game name")
     parser.add_argument("TAG", help="Riot tag line")
     parser.add_argument("--matches-dir", default="matches")
-    parser.add_argument("-a", "--include-aram", action="store_true", help="Include ARAM matches")
-    parser.add_argument("-q", "--queue", nargs="*", type=int, help="Queue ID whitelist")
-    parser.add_argument("-M", "--modes", nargs="*", help="Whitelist gameMode values")
+    parser.add_argument(
+        "-a",
+        "--include-aram",
+        action="store_true",
+        help="Include ARAM matches",
+    )
+    parser.add_argument(
+        "-q", "--queue", nargs="*", type=int, help="Queue ID whitelist"
+    )
+    parser.add_argument(
+        "-M", "--modes", nargs="*", help="Whitelist gameMode values"
+    )
     parser.add_argument("--puuid", help="Explicit PUUID (skip lookup)")
     args = parser.parse_args()
 
@@ -397,7 +479,7 @@ def main() -> None:  # pragma: no cover - CLI wrapper
     if args.puuid:
         puuid = args.puuid
     else:  # lazy import to avoid circular at module import
-        from stats_visualization import league as _league  # type: ignore
+        from stats_visualization import league as _league
         import os
 
         token = os.getenv("RIOT_API_TOKEN")
