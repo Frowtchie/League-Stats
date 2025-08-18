@@ -1,0 +1,33 @@
+<svg width="800" height="480" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="480" fill="#f8f9fa"/>
+  <rect x="40" y="40" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="140" y="85" font-size="20" text-anchor="middle" fill="#2c3e50">CLI (league.py)</text>
+  <rect x="300" y="40" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="400" y="85" font-size="20" text-anchor="middle" fill="#2c3e50">Data Fetcher</text>
+  <rect x="560" y="40" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="660" y="85" font-size="20" text-anchor="middle" fill="#2c3e50">Match Cache</text>
+  <rect x="40" y="180" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="140" y="225" font-size="20" text-anchor="middle" fill="#2c3e50">Analyzer (analyze.py)</text>
+  <rect x="300" y="180" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="400" y="225" font-size="20" text-anchor="middle" fill="#2c3e50">Visualization</text>
+  <rect x="560" y="180" width="200" height="80" fill="#e3e7ef" stroke="#2c3e50" stroke-width="2"/>
+  <text x="660" y="225" font-size="20" text-anchor="middle" fill="#2c3e50">Output (charts)</text>
+  <rect x="300" y="320" width="200" height="80" fill="#f9e79f" stroke="#b9770e" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="400" y="365" font-size="18" text-anchor="middle" fill="#b9770e">Filtering Logic</text>
+  <rect x="560" y="320" width="200" height="80" fill="#d6eaf8" stroke="#2874a6" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="660" y="365" font-size="18" text-anchor="middle" fill="#2874a6">Async Branch (future)</text>
+  <line x1="240" y1="80" x2="300" y2="80" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="500" y1="80" x2="560" y2="80" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="140" y1="120" x2="140" y2="180" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="400" y1="120" x2="400" y2="180" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="660" y1="120" x2="660" y2="180" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="240" y1="220" x2="300" y2="220" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="500" y1="220" x2="560" y2="220" stroke="#2c3e50" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="400" y1="260" x2="400" y2="320" stroke="#b9770e" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#arrow)"/>
+  <line x1="660" y1="260" x2="660" y2="320" stroke="#2874a6" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 L2,5 Z" fill="#2c3e50" />
+    </marker>
+  </defs>
+</svg>

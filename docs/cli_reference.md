@@ -1,5 +1,7 @@
 # CLI Reference
 
+> See the [Glossary](glossary.md) for definitions of IGN, Riot ID, Queue ID, Game Mode, Role, and other terms used below.
+
 ## Common Pattern
 ```
 python stats_visualization/analyze.py --riot-id <IGN> <TAG_LINE> [options]
@@ -13,7 +15,7 @@ Short aliases have been added; long forms still work. Examples: `-i`, `-p`, `-m`
 
 | Short | Long | Description | Default |
 |-------|------|-------------|---------|
-| `-i` | `--riot-id IGN TAG` | Use Riot ID (preferred; IGN = in‑game name) | - |
+| `-i` | `--riot-id IGN TAG` | Use Riot ID (preferred; [IGN](glossary.md#ign) = in-game name) | - |
 | `-p` | `--player NAME` | Legacy config lookup (case-insensitive) | - |
 | (none) | `--team-analysis` | Aggregate team/objective stats | off |
 | `-m` | `--matches-dir DIR` | Match JSON directory | `matches` |
@@ -23,9 +25,9 @@ Short aliases have been added; long forms still work. Examples: `-i`, `-p`, `-m`
 | (none) | `--fetch-count N` | Matches to fetch when auto-fetching | 10 |
 | (none) | `--no-auto-fetch` | Disable auto-fetch | off |
 | `-a` | `--include-aram` | Include ARAM (excluded by default) | off |
-| `-q` | `--queue IDS` | Whitelist queue IDs (e.g. `420 440`) | all |
+| `-q` | `--queue IDS` | Whitelist [queue IDs](glossary.md#queue-id) (e.g. `420 440`) | all |
 | `-R` | `--ranked-only` | Shortcut for `--queue 420 440` | off |
-| `-M` | `--modes MODES` | Whitelist `gameMode` values (e.g. `CLASSIC`) | all |
+| `-M` | `--modes MODES` | Whitelist [gameMode](glossary.md#game-mode) values (e.g. `CLASSIC`) | all |
 | `-g` | `--generate-visuals` | After analysis generate all charts | off |
 | `-O` | `--no-clean-output` | With --generate-visuals, keep existing PNGs | off |
 
@@ -47,7 +49,7 @@ All visualization scripts accept `IGN TAG_LINE` plus filtering flags. Short alia
 |--------|---------|----------------------------|
 | `visualizations/graph_drakes.py` | Personal drake & dragon control trends | Filtering flags* |
 | `visualizations/graph_barons_heralds.py` | Baron & Herald control comparison | Filtering flags* |
-| `visualizations/graph_first_bloods.py` | Early game & first blood stats | `-r/--role-comparison` + Filtering flags* |
+| `visualizations/graph_first_bloods.py` | Early game & first blood stats | `-r/--role-comparison` + [Role](glossary.md#role) filtering flags* |
 | `visualizations/graph_kills.py` | Kills, assists, KDA progression | Filtering flags* |
 | `visualizations/farming_analysis.py` | CS/min, gold efficiency, role economy | `-c/--chart farming|gold|roles|all` + Filtering flags* |
 | `visualizations/jungle_clear_analysis.py` | Jungle first clear timing, efficiency | Filtering flags* |

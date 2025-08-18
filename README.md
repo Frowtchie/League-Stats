@@ -1,11 +1,23 @@
 # League Stats
 
+> **New:** See the [Glossary](docs/glossary.md) for definitions of key terms (IGN, Riot ID, PUUID, Queue ID, Game Mode, Role, Timeline, Objective).
+
 A Python application for analyzing personal League of Legends performance from match data via the Riot Games API. Get detailed insights into your gameplay, track improvement, and identify areas for growth.
 
 ## Version
 
 Current version: **1.0.0**  
 See the [Changelog](docs/changelog.md) for release notes (new, unreleased changes are tracked under the Unreleased heading there).
+
+**Key Terms:**
+- **IGN**: See [Glossary](docs/glossary.md#ign)
+- **Riot ID**: See [Glossary](docs/glossary.md#riot-id)
+- **PUUID**: See [Glossary](docs/glossary.md#puuid)
+- **Queue ID**: See [Glossary](docs/glossary.md#queue-id)
+- **Game Mode**: See [Glossary](docs/glossary.md#game-mode)
+- **Role**: See [Glossary](docs/glossary.md#role)
+- **Timeline**: See [Glossary](docs/glossary.md#timeline)
+- **Objective**: See [Glossary](docs/glossary.md#objective)
 
 ## Features
 
