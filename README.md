@@ -29,6 +29,7 @@ See the [Changelog](docs/changelog.md) for release notes (new, unreleased change
 - **Economic Efficiency**: Track farming performance, gold efficiency, and damage per gold
 - **Early Game Analysis**: Monitor first blood statistics and early game performance
 - **Jungle Clear Analysis**: ⭐ **NEW!** Calculate first jungle clear times for jungle games with timeline data
+ - **Lane Phase Lane Metrics**: ⭐ **NEW!** Track lane CS advantage at 10/15 plus separate XP & Gold diff figure vs inferred opponent
 - **Progression Tracking**: Visualize improvement trends and identify patterns
 - **Multi-player Support**: Analyze multiple accounts with secure configuration
 - **Robust Caching**: Avoid redundant API calls with intelligent match caching
@@ -151,6 +152,9 @@ python stats_visualization/visualizations/graph_drakes.py Frowtch blue --queue 4
 python stats_visualization/visualizations/graph_barons_heralds.py Frowtch blue --queue 420 440
 python stats_visualization/visualizations/graph_kills.py Frowtch blue --ranked-only
 python stats_visualization/visualizations/graph_first_bloods.py Frowtch blue
+
+# Lane phase lane metrics timeline (CS + separate XP/Gold)
+python stats_visualization/visualizations/lane_cs_diff.py Frowtch blue --ranked-only
 ```
 
 ### Run with a Graphical Interface (GUI Prototype)

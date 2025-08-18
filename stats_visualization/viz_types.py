@@ -104,3 +104,28 @@ class ChampionStats(TypedDict):
     assists: List[int]
     kda: List[float]
     games: int
+
+
+class LaneCSDiffData(TypedDict):
+    """Lane phase CS diff timeline data.
+
+    Stores per-match player and diff CS values at 10 and 15 minutes for games
+    where timeline information is available and an opponent could be inferred.
+    Positive diff values mean the player is AHEAD of the inferred lane opponent.
+    """
+
+    match_indices: List[int]
+    cs10: List[int]
+    cs15: List[int]
+    xp10: List[int]
+    xp15: List[int]
+    gold10: List[int]
+    gold15: List[int]
+    diff10: List[int]
+    diff15: List[int]
+    xp_diff10: List[int]
+    xp_diff15: List[int]
+    gold_diff10: List[int]
+    gold_diff15: List[int]
+    opponent_missing: int  # count of matches skipped due to missing / ambiguous opponent
+    total_considered: int  # total matches inspected after filtering (including skipped)
