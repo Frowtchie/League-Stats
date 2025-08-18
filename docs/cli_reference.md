@@ -53,6 +53,7 @@ All visualization scripts accept `IGN TAG_LINE` plus filtering flags. Short alia
 | `visualizations/graph_kills.py` | Kills, assists, KDA progression | Filtering flags* |
 | `visualizations/farming_analysis.py` | CS/min, gold efficiency, role economy | `-c/--chart farming|gold|roles|all` + Filtering flags* |
 | `visualizations/jungle_clear_analysis.py` | Jungle first clear timing, efficiency | Filtering flags* |
+| `visualizations/lane_cs_diff.py` | Lane phase lane metrics (CS) + separate XP/Gold diff timeline | Filtering flags* |
 | `visualizations/objective_analysis.py` | Objective control & first objectives | `-c/--chart control|first|correlation|all` + Filtering flags* |
 | `visualizations/personal_performance.py` | Trends, champions, role performance | `-c/--chart trends|champions|roles|all` + Filtering flags* |
 

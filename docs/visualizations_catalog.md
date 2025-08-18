@@ -10,6 +10,7 @@
 | farming_analysis.py (gold) | gold_efficiency_<player>.png | Gold & damage efficiency | Correlation & economy pacing (filtering flags) |
 | farming_analysis.py (roles) | role_economy_<player>.png | Economy by role | Comparative benchmarks (filtering flags) |
 | jungle_clear_analysis.py | jungle_clear_analysis.png | First clear & efficiency | Clear timing consistency (filtering flags) |
+| lane_cs_diff.py | lane_cs_diff_<player>.png, lane_resource_diffs_<player>.png | Lane phase lane metrics timeline | CS@10/@15 lane advantage trends; XP/Gold diffs now in separate figure |
 | objective_analysis.py (control) | objective_control_<player>.png | Team objective averages | Control vs win indicators (ARAM excluded by default; filtering flags) |
 | objective_analysis.py (first) | first_objectives_<player>.png | First objective success | Early control impact (ARAM excluded by default; filtering flags) |
 | personal_performance.py (trends) | performance_trends_<player>.png | KDA & win rate trends | Improvement trajectory (filtering flags) |

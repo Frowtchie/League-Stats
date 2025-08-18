@@ -4,6 +4,7 @@
 - Added [glossary](glossary.md) with definitions for IGN, Riot ID, PUUID, Queue ID, Game Mode, Role, Timeline, Objective.
 - Updated [architecture diagram](architecture.svg) to include filtering logic and async branch placeholder.
 - Cross-linked glossary terms in README and CLI reference for onboarding clarity.
+ - New visualization: lane phase lane metrics timeline (`lane_cs_diff.py`) with CS/XP/Gold @10/@15 diffs vs inferred opponent (positive = ahead for each); integrated into bulk generation. (Updated) XP/Gold now rendered in a separate figure (`lane_resource_diffs_<player>.png`) to reduce clutter.
 
 ## 1.0.0 - 2025-08-17
 - First stable release. Introduces Streamlit GUI prototype (`stats_visualization/gui_app.py`) for interactive chart generation, filtering (ranked only, ARAM inclusion, queue & mode filters), and modal image gallery with download.

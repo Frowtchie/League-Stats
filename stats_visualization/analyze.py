@@ -801,6 +801,28 @@ def generate_all_visuals(
         ),
     )
 
+    # 9. Lane phase CS diff (issue #12)
+    try:
+        from stats_visualization.visualizations import lane_cs_diff as _lcd
+
+        _run(
+            "lane_cs_diff",
+            lambda: _lcd.plot_lane_cs_diff(
+                player_label,
+                _lcd.extract_lane_cs_diff_data(
+                    player_puuid,
+                    matches_dir=matches_dir,
+                    include_aram=include_aram,
+                    queue_filter=list(queue_filter) if queue_filter else None,
+                    game_mode_whitelist=(
+                        list(game_mode_whitelist) if game_mode_whitelist else None
+                    ),
+                ),
+            ),
+        )
+    except Exception as exc:  # pragma: no cover
+        results.append(("lane_cs_diff", f"fail: {exc}"))
+
     # Summary
     successes = sum(1 for _, r in results if r == "ok")
     print(f"Visualization generation complete: {successes}/{len(results)} succeeded. Details: ")
