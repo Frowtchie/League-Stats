@@ -28,6 +28,7 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 from stats_visualization import analyze
 from stats_visualization.utils import filter_matches, save_figure, sanitize_player
@@ -82,7 +83,9 @@ def _extract_snapshots_from_root_timeline(
     frames_raw = info.get("frames")  # type: ignore[assignment]
     if not isinstance(frames_raw, list):  # type: ignore[unreachable]
         return {}
-    frames: List[Dict[str, Any]] = [cast(Dict[str, Any], f) for f in frames_raw if isinstance(f, dict)]
+    frames: List[Dict[str, Any]] = [
+        cast(Dict[str, Any], f) for f in frames_raw if isinstance(f, dict)
+    ]
     result: Dict[int, Dict[int, Dict[str, int]]] = {m: {} for m in SNAP_MINUTES}
     for minute in SNAP_MINUTES:
         target_ms = minute * 60_000
@@ -162,7 +165,9 @@ def extract_lane_cs_diff_data(
         parts_raw = info_obj.get("participants")  # type: ignore[assignment]
         if not isinstance(parts_raw, list):  # type: ignore[unreachable]
             continue
-        parts: List[Dict[str, Any]] = [cast(Dict[str, Any], p) for p in parts_raw if isinstance(p, dict)]
+        parts: List[Dict[str, Any]] = [
+            cast(Dict[str, Any], p) for p in parts_raw if isinstance(p, dict)
+        ]
         player_part = None
         for p in parts:
             if p.get("puuid") == player_puuid:
@@ -240,7 +245,9 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
         print(f"No lane phase CS diff data for {player_label}")
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.set_title(f"No lane phase CS diff data for {player_label}")
-        save_figure(fig, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff (empty)")
+        save_figure(
+            fig, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff (empty)"
+        )
         plt.close(fig)
         return
 
@@ -261,8 +268,14 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
     ax_cs.set_title(f"{player_label} Lane Phase CS Diff (Positive = Ahead)")
     # Legend outside bottom to avoid covering data
     handles_cs, labels_cs = ax_cs.get_legend_handles_labels()
-    fig_cs.subplots_adjust(bottom=0.23)
-    ax_cs.legend(handles_cs, labels_cs, loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=len(handles_cs))
+    # Add trend line legends
+    handles_cs.append(Line2D([0], [0], linestyle="--", color="#1f77b4", alpha=0.5))
+    labels_cs.append("Trend CS Δ@10")
+    handles_cs.append(Line2D([0], [0], linestyle="--", color="#ff7f0e", alpha=0.5))
+    labels_cs.append("Trend CS Δ@15")
+    ax_cs.legend(
+        handles_cs, labels_cs, loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=len(handles_cs)
+    )
     ax_cs.grid(alpha=0.3)
     mean10 = np.mean(data["diff10"]) if data["diff10"] else 0
     mean15 = np.mean(data["diff15"]) if data["diff15"] else 0
@@ -272,9 +285,18 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
     )
     # Move stats box outside plotting area (top-left margin)
     fig_cs.subplots_adjust(top=0.80)  # create space above axes
-    fig_cs.text(0.01, 0.985, cs_text, va="top", ha="left", fontsize=10,
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"))
-    save_figure(fig_cs, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff timeline")
+    fig_cs.text(
+        0.01,
+        0.985,
+        cs_text,
+        va="top",
+        ha="left",
+        fontsize=10,
+        bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"),
+    )
+    save_figure(
+        fig_cs, f"lane_cs_diff_{sanitize_player(player_label)}", description="lane cs diff timeline"
+    )
     plt.close(fig_cs)
 
     # Initialize fig_rg to avoid unbound variable errors
@@ -284,11 +306,43 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
     if data["xp_diff10"] or data["gold_diff10"]:
         fig_rg, ax_rg = plt.subplots(figsize=(10, 5))
         if data["xp_diff10"]:
-            ax_rg.plot(x, data["xp_diff10"], marker="^", linestyle=":", label="XP Δ@10", color="#2ca02c", alpha=0.8)
-            ax_rg.plot(x, data["xp_diff15"], marker="^", linestyle="--", label="XP Δ@15", color="#2ca02c", alpha=0.55)
+            ax_rg.plot(
+                x,
+                data["xp_diff10"],
+                marker="^",
+                linestyle=":",
+                label="XP Δ@10",
+                color="#2ca02c",
+                alpha=0.8,
+            )
+            ax_rg.plot(
+                x,
+                data["xp_diff15"],
+                marker="^",
+                linestyle="--",
+                label="XP Δ@15",
+                color="#2ca02c",
+                alpha=0.55,
+            )
         if data["gold_diff10"]:
-            ax_rg.plot(x, data["gold_diff10"], marker="v", linestyle=":", label="Gold Δ@10", color="#9467bd", alpha=0.8)
-            ax_rg.plot(x, data["gold_diff15"], marker="v", linestyle="--", label="Gold Δ@15", color="#9467bd", alpha=0.55)
+            ax_rg.plot(
+                x,
+                data["gold_diff10"],
+                marker="v",
+                linestyle=":",
+                label="Gold Δ@10",
+                color="#9467bd",
+                alpha=0.8,
+            )
+            ax_rg.plot(
+                x,
+                data["gold_diff15"],
+                marker="v",
+                linestyle="--",
+                label="Gold Δ@15",
+                color="#9467bd",
+                alpha=0.55,
+            )
         ax_rg.axhline(0, color="black", linewidth=1)
         ax_rg.set_xlabel("Match Index (chronological)")
         ax_rg.set_ylabel("XP / Gold Difference")
@@ -309,11 +363,22 @@ def plot_lane_cs_diff(player_label: str, data: LaneCSDiffData) -> None:
 
         # Move stats box outside plotting area (top-left margin)
         fig_rg.subplots_adjust(top=0.80)  # ensure room
-        fig_rg.text(0.01, 0.985, rg_text, va="top", ha="left", fontsize=10,
-                    bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"))
+        fig_rg.text(
+            0.01,
+            0.985,
+            rg_text,
+            va="top",
+            ha="left",
+            fontsize=10,
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.85, edgecolor="#999"),
+        )
 
         # Save figure
-        save_figure(fig_rg, f"lane_resource_diffs_{sanitize_player(player_label)}", description="lane xp gold diffs")
+        save_figure(
+            fig_rg,
+            f"lane_resource_diffs_{sanitize_player(player_label)}",
+            description="lane xp gold diffs",
+        )
         plt.close(fig_rg)
 
 
@@ -334,6 +399,7 @@ def main() -> None:  # pragma: no cover - CLI wrapper
     else:  # lazy import to avoid circular at module import
         from stats_visualization import league as _league  # type: ignore
         import os
+
         token = os.getenv("RIOT_API_TOKEN")
         if not token:
             raise SystemExit("RIOT_API_TOKEN environment variable is not set")

@@ -33,6 +33,7 @@ def mock_matches(monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, Any]]:
                     },
                 },
             }
+
         # Provide two frames each side of target times to ensure closest selection
         timeline = {  # type: ignore[var-annotated]
             "info": {
@@ -48,8 +49,18 @@ def mock_matches(monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, Any]]:
             "info": {
                 "gameCreation": game_creation,
                 "participants": [
-                    {"puuid": "player", "teamId": 100, "teamPosition": "TOP", "participantId": player_pid},
-                    {"puuid": f"opp{game_creation}", "teamId": 200, "teamPosition": "TOP", "participantId": opp_pid},
+                    {
+                        "puuid": "player",
+                        "teamId": 100,
+                        "teamPosition": "TOP",
+                        "participantId": player_pid,
+                    },
+                    {
+                        "puuid": f"opp{game_creation}",
+                        "teamId": 200,
+                        "teamPosition": "TOP",
+                        "participantId": opp_pid,
+                    },
                 ],
             },
             "timeline": timeline,
@@ -103,7 +114,12 @@ def test_extract_lane_cs_diff_data_missing_all(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(
         "stats_visualization.analyze.load_match_files",
         lambda *_: [  # type: ignore[return-value]
-            {"info": {"gameCreation": 1, "participants": [{"puuid": "player", "teamId": 100, "teamPosition": "TOP"}]}}
+            {
+                "info": {
+                    "gameCreation": 1,
+                    "participants": [{"puuid": "player", "teamId": 100, "teamPosition": "TOP"}],
+                }
+            }
         ],
     )
     data = extract_lane_cs_diff_data("player")
