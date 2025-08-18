@@ -21,6 +21,7 @@ nav:
   - Home: index.md
   - Overview: overview.md
   - Architecture: architecture.md
+  - Glossary: glossary.md
   - Fetching Logic: fetching_logic.md
   - Metrics: metrics_definitions.md
   - Visualizations Catalog: visualizations_catalog.md
