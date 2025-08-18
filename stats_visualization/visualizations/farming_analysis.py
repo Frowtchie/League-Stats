@@ -291,8 +291,8 @@ def plot_gold_efficiency(player_name: str, economy_data: EconomyData) -> None:
     ax3.grid(True, alpha=0.3)
 
     # Format axes
-    ax3.xaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
-    ax3.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
+    ax3.xaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x / 1000:.0f}K"))
+    ax3.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x / 1000:.0f}K"))
 
     # Economic efficiency over time
     game_numbers = range(1, len(damage_per_gold) + 1)

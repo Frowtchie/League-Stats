@@ -232,9 +232,9 @@ def analyze_team_performance(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def print_player_report(stats: Dict[str, Any], player_name: str):
     """Print a formatted player performance report."""
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"PLAYER PERFORMANCE REPORT: {player_name}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
 
     print("\n📊 Overall Performance:")
     print(f"   Total Games: {stats['total_games']}")
@@ -271,7 +271,8 @@ def print_team_report(stats: Dict[str, Any]):
     print("\n📈 Match Overview:")
     print(f"   Total Matches Analyzed: {stats['total_matches']}")
     print(
-        f"   Average Game Duration: {stats['average_duration']//60:.0f}m {stats['average_duration'] % 60:.0f}s"
+        f"   Average Game Duration: {stats['average_duration'] // 60:.0f}m "
+        f"{stats['average_duration'] % 60:.0f}s"
     )
 
     print("\n🎮 Game Modes:")

@@ -393,7 +393,7 @@ def plot_role_performance(
     ax4.set_xlabel("Role")
 
     # Format damage values
-    ax4.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1000:.0f}K"))
+    ax4.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x / 1000:.0f}K"))
 
     plt.tight_layout()
     save_figure(
