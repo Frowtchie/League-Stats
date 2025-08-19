@@ -860,15 +860,15 @@ def main():
         help="Disable caching and re-fetch all matches",
     )
     parser.add_argument(
-        "--async-fetch",
+        "--sync-mode",
         action="store_true",
-        help="Use async/batched fetching for improved performance (requires httpx)",
+        help="Use synchronous mode instead of default async/batched fetching",
     )
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=5,
-        help="Maximum concurrent requests when using async mode (default: 5)",
+        default=8,
+        help="Maximum concurrent requests when using async mode (default: 8)",
     )
     parser.add_argument(
         "--metrics-json",
@@ -886,8 +886,8 @@ def main():
         logger.error("RIOT_API_TOKEN environment variable is not set.")
         raise EnvironmentError("RIOT_API_TOKEN environment variable is not set.")
 
-    # Check async mode availability
-    async_mode = args.async_fetch
+    # Check async mode availability - default to async unless explicitly disabled or httpx unavailable
+    async_mode = not args.sync_mode
     if async_mode:
         try:
             import httpx  # noqa: F401
