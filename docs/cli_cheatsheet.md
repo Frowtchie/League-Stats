@@ -7,6 +7,9 @@ Ultra‑compact reference for frequent commands and flags. See `cli_reference.md
 # Fetch matches (module form recommended)
 python -m stats_visualization.league <IGN> <TAG> <COUNT>
 
+# Fetch with async mode for better performance
+python -m stats_visualization.league <IGN> <TAG> <COUNT> --async-fetch --concurrency 8
+
 # Analyze (Riot ID preferred)
 python analyze.py -i <IGN> <TAG> [flags]
 
@@ -41,6 +44,14 @@ python stats_visualization/visualizations/farming_analysis.py <IGN> <TAG> -c rol
 | `-X / --no-auto-fetch` | Disable auto fetch |
 | `-d / --debug` | Force DEBUG logging |
 | `-l / --log-level LEVEL` | Set log level (INFO default) |
+
+### Match Fetching (league.py) Extras
+| Flag | Purpose |
+|------|---------|
+| `--async-fetch` | Use async/batched fetching for performance |
+| `--concurrency N` | Max concurrent requests (default 5) |
+| `--metrics-json FILE` | Export fetch metrics to JSON |
+| `--no-cache` | Disable caching, re-fetch all |
 
 ### Visualization Script Extras
 | Script | Flag (short/long) | Purpose |

@@ -3,12 +3,15 @@ import sys
 import os
 import json
 import tempfile
-from unittest.mock import patch, Mock, AsyncMock
 from pathlib import Path
+from unittest.mock import patch
 
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # noqa: E402
-from stats_visualization.league import FetchMetrics, export_metrics_json, _fetch_metrics  # noqa: E402
+from stats_visualization.league import (  # noqa: E402
+    FetchMetrics,
+    export_metrics_json,
+)
 
 
 class TestFetchMetrics(unittest.TestCase):
@@ -16,7 +19,8 @@ class TestFetchMetrics(unittest.TestCase):
 
     def setUp(self):
         """Reset metrics before each test."""
-        global _fetch_metrics
+        from stats_visualization.league import _fetch_metrics
+
         _fetch_metrics.total_requests = 0
         _fetch_metrics.cache_hits = 0
         _fetch_metrics.cache_misses = 0
@@ -42,7 +46,7 @@ class TestFetchMetrics(unittest.TestCase):
         metrics = FetchMetrics()
         metrics.add_request_latency(0.5, "match_details")
         metrics.add_request_latency(0.3, "timeline")
-        
+
         self.assertEqual(metrics.total_requests, 2)
         self.assertEqual(metrics.match_details_requests, 1)
         self.assertEqual(metrics.timeline_requests, 1)
@@ -56,7 +60,7 @@ class TestFetchMetrics(unittest.TestCase):
         metrics.add_cache_hit()
         metrics.add_cache_hit()
         metrics.add_cache_miss()
-        
+
         self.assertEqual(metrics.cache_hits, 2)
         self.assertEqual(metrics.cache_misses, 1)
 
@@ -66,7 +70,7 @@ class TestFetchMetrics(unittest.TestCase):
         # Add latencies: [0.1, 0.2, 0.3, 0.4, 0.5]
         for i in range(1, 6):
             metrics.add_request_latency(i * 0.1)
-        
+
         self.assertAlmostEqual(metrics.avg_latency, 0.3, places=1)
         self.assertAlmostEqual(metrics.max_latency, 0.5, places=1)
         # P95 of [0.1, 0.2, 0.3, 0.4, 0.5] should be close to 0.5
@@ -76,11 +80,11 @@ class TestFetchMetrics(unittest.TestCase):
         """Test overall timing functionality."""
         metrics = FetchMetrics()
         import time
-        
+
         metrics.start_timing()
         time.sleep(0.01)  # Sleep for 10ms
         metrics.end_timing()
-        
+
         self.assertIsNotNone(metrics.total_duration)
         self.assertGreater(metrics.total_duration, 0.005)  # Should be at least 5ms
 
@@ -90,9 +94,9 @@ class TestFetchMetrics(unittest.TestCase):
         metrics.add_request_latency(0.2, "match_details")
         metrics.add_cache_hit()
         metrics.add_retry()
-        
+
         result = metrics.to_dict()
-        
+
         self.assertEqual(result["total_requests"], 1)
         self.assertEqual(result["cache_hits"], 1)
         self.assertEqual(result["cache_misses"], 0)
@@ -104,25 +108,27 @@ class TestFetchMetrics(unittest.TestCase):
     def test_metrics_json_export(self):
         """Test JSON export functionality."""
         # Set up some test metrics
+        from stats_visualization.league import _fetch_metrics
+
         _fetch_metrics.add_request_latency(0.1, "match_details")
         _fetch_metrics.add_cache_hit()
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
             temp_path = f.name
-        
+
         try:
             export_metrics_json(temp_path)
-            
+
             # Verify file was created and contains expected data
             self.assertTrue(Path(temp_path).exists())
-            
-            with open(temp_path, 'r') as f:
+
+            with open(temp_path, "r") as f:
                 data = json.load(f)
-            
+
             self.assertEqual(data["total_requests"], 1)
             self.assertEqual(data["cache_hits"], 1)
             self.assertEqual(data["avg_latency_ms"], 100.0)
-            
+
         finally:
             # Clean up
             if Path(temp_path).exists():
@@ -131,7 +137,7 @@ class TestFetchMetrics(unittest.TestCase):
     def test_empty_metrics_statistics(self):
         """Test statistics with no data."""
         metrics = FetchMetrics()
-        
+
         self.assertEqual(metrics.avg_latency, 0.0)
         self.assertEqual(metrics.p95_latency, 0.0)
         self.assertEqual(metrics.max_latency, 0.0)
@@ -143,38 +149,39 @@ class TestAsyncFunctionalities(unittest.TestCase):
 
     def test_httpx_import_graceful_fallback(self):
         """Test graceful fallback when httpx is not available."""
-        # This is more of a documentation test since we can't easily 
+        # This is more of a documentation test since we can't easily
         # test import failures in the current setup
         try:
             import httpx  # noqa: F401
+
             self.assertTrue(True, "httpx is available")
         except ImportError:
             self.assertTrue(True, "httpx graceful fallback would work")
 
-    @patch('stats_visualization.league.logger')
+    @patch("stats_visualization.league.logger")
     def test_metrics_print_summary(self, mock_logger):
         """Test metrics summary printing."""
         metrics = FetchMetrics()
         metrics.add_request_latency(0.2)
         metrics.add_cache_hit()
         metrics.add_cache_miss()
-        
+
         # Capture print output
         import io
         import sys
-        
+
         captured_output = io.StringIO()
         sys.stdout = captured_output
-        
+
         try:
             metrics.print_summary()
             output = captured_output.getvalue()
-            
+
             self.assertIn("=== Fetch Metrics Summary ===", output)
             self.assertIn("Total requests: 1", output)
             self.assertIn("Cache hits: 1", output)
             self.assertIn("Cache misses: 1", output)
-            
+
         finally:
             sys.stdout = sys.__stdout__
 

@@ -1,6 +1,8 @@
 
 # Changelog
 ## Unreleased
+- **NEW**: Async/batched Riot API fetch with lightweight cache metrics (`--async-fetch`, `--concurrency N`, `--metrics-json FILE` flags for `league.py`). Provides significant performance improvement via controlled parallelism while respecting rate limits. Includes graceful fallback to sync mode if httpx unavailable.
+- **ENHANCED**: Comprehensive metrics collection for all fetch operations (sync/async) with latency tracking (avg/p95/max), cache hit/miss ratios, retry counts, and per-phase breakdown (match IDs, details, timelines).
 - Added [glossary](glossary.md) with definitions for IGN, Riot ID, PUUID, Queue ID, Game Mode, Role, Timeline, Objective.
 - Updated [architecture diagram](architecture.svg) to include filtering logic and async branch placeholder.
 - Cross-linked glossary terms in README and CLI reference for onboarding clarity.

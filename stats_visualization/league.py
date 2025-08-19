@@ -32,71 +32,71 @@ load_dotenv(dotenv_path="config.env")
 @dataclass
 class FetchMetrics:
     """Metrics collected during match fetching operations."""
-    
+
     # Timing metrics
     total_requests: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
     retry_count: int = 0
-    
+
     # Latency tracking (in seconds)
     request_latencies: List[float] = field(default_factory=list)
-    
+
     # Per-phase breakdown
     match_ids_requests: int = 0
     match_details_requests: int = 0
     timeline_requests: int = 0
-    
+
     # Timing for major phases
     start_time: Optional[float] = None
     end_time: Optional[float] = None
-    
+
     def add_request_latency(self, latency: float, request_type: str = "unknown") -> None:
         """Add a request latency measurement."""
         self.request_latencies.append(latency)
         self.total_requests += 1
-        
+
         if request_type == "match_ids":
             self.match_ids_requests += 1
         elif request_type == "match_details":
             self.match_details_requests += 1
         elif request_type == "timeline":
             self.timeline_requests += 1
-    
+
     def add_cache_hit(self) -> None:
         """Record a cache hit."""
         self.cache_hits += 1
-    
+
     def add_cache_miss(self) -> None:
         """Record a cache miss."""
         self.cache_misses += 1
-    
+
     def add_retry(self) -> None:
         """Record a retry attempt."""
         self.retry_count += 1
-    
+
     def start_timing(self) -> None:
         """Start timing the overall operation."""
         self.start_time = time.time()
-    
+
     def end_timing(self) -> None:
         """End timing the overall operation."""
         self.end_time = time.time()
-    
+
     @property
     def total_duration(self) -> Optional[float]:
         """Get total operation duration in seconds."""
         if self.start_time and self.end_time:
             return self.end_time - self.start_time
         return None
-    
+
     @property
     def avg_latency(self) -> float:
         """Get average request latency in seconds."""
         if not self.request_latencies:
             return 0.0
         return sum(self.request_latencies) / len(self.request_latencies)
-    
+
     @property
     def p95_latency(self) -> float:
         """Get 95th percentile latency in seconds."""
@@ -105,14 +105,14 @@ class FetchMetrics:
         sorted_latencies = sorted(self.request_latencies)
         index = int(len(sorted_latencies) * 0.95)
         return sorted_latencies[min(index, len(sorted_latencies) - 1)]
-    
+
     @property
     def max_latency(self) -> float:
         """Get maximum latency in seconds."""
         if not self.request_latencies:
             return 0.0
         return max(self.request_latencies)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert metrics to dictionary for JSON export."""
         return {
@@ -128,23 +128,35 @@ class FetchMetrics:
                 "match_ids_requests": self.match_ids_requests,
                 "match_details_requests": self.match_details_requests,
                 "timeline_requests": self.timeline_requests,
-            }
+            },
         }
-    
+
     def print_summary(self) -> None:
         """Print a summary of metrics to console."""
         print("=== Fetch Metrics Summary ===")
         print(f"Total requests: {self.total_requests}")
         print(f"Cache hits: {self.cache_hits}, Cache misses: {self.cache_misses}")
         if self.total_requests > 0:
-            cache_ratio = self.cache_hits / (self.cache_hits + self.cache_misses) * 100 if (self.cache_hits + self.cache_misses) > 0 else 0
+            cache_ratio = (
+                self.cache_hits / (self.cache_hits + self.cache_misses) * 100
+                if (self.cache_hits + self.cache_misses) > 0
+                else 0
+            )
             print(f"Cache hit ratio: {cache_ratio:.1f}%")
         print(f"Retry count: {self.retry_count}")
         if self.request_latencies:
-            print(f"Latency - Avg: {self.avg_latency*1000:.1f}ms, P95: {self.p95_latency*1000:.1f}ms, Max: {self.max_latency*1000:.1f}ms")
+            print(
+                f"Latency - Avg: {self.avg_latency * 1000:.1f}ms, "
+                f"P95: {self.p95_latency * 1000:.1f}ms, "
+                f"Max: {self.max_latency * 1000:.1f}ms"
+            )
         if self.total_duration:
             print(f"Total duration: {self.total_duration:.2f}s")
-        print(f"Phase breakdown - IDs: {self.match_ids_requests}, Details: {self.match_details_requests}, Timelines: {self.timeline_requests}")
+        print(
+            f"Phase breakdown - IDs: {self.match_ids_requests}, "
+            f"Details: {self.match_details_requests}, "
+            f"Timelines: {self.timeline_requests}"
+        )
         print("=============================")
 
 
@@ -217,7 +229,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30, request_type: str = "unknown"):
+def make_api_request(
+    url: str, headers: Dict[str, str], timeout: int = 30, request_type: str = "unknown"
+):
     """
     Make a request to the API with proper error handling and metrics collection.
 
@@ -246,7 +260,7 @@ def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30, reque
         if e.response is not None and e.response.status_code == 429:
             _fetch_metrics.add_retry()
         raise
-    except Exception as e:
+    except Exception:
         latency = time.time() - start_time
         _fetch_metrics.add_request_latency(latency, request_type)
         raise
@@ -605,7 +619,7 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
 def export_metrics_json(filepath: str) -> None:
     """
     Export metrics to a JSON file.
-    
+
     Args:
         filepath (str): Path to the JSON file to export metrics to
     """
@@ -617,7 +631,9 @@ def export_metrics_json(filepath: str) -> None:
         logger.error(f"Failed to export metrics to {filepath}: {e}")
 
 
-async def process_matches_async(match_ids: List[str], token: str, use_cache: bool = True, concurrency: int = 5) -> None:
+async def process_matches_async(
+    match_ids: List[str], token: str, use_cache: bool = True, concurrency: int = 5
+) -> None:
     """
     Processes a list of match IDs asynchronously with concurrency control.
 
@@ -634,7 +650,6 @@ async def process_matches_async(match_ids: List[str], token: str, use_cache: boo
         logger.error("httpx not available for async processing")
         raise
 
-    total_matches = len(match_ids)
     successful = 0
     failed = 0
     cached = 0
@@ -642,10 +657,10 @@ async def process_matches_async(match_ids: List[str], token: str, use_cache: boo
     # Create semaphore for concurrency control
     semaphore = asyncio.Semaphore(concurrency)
 
-    async def process_single_match(match_id: str, session: httpx.AsyncClient) -> bool:
+    async def process_single_match(match_id: str, session) -> bool:
         """Process a single match with concurrency control."""
         nonlocal successful, failed, cached
-        
+
         async with semaphore:
             try:
                 logger.info(f"Processing match: {match_id}")
@@ -681,28 +696,32 @@ async def process_matches_async(match_ids: List[str], token: str, use_cache: boo
     )
 
 
-async def fetch_match_with_timeline_async(match_id: str, token: str, session: httpx.AsyncClient) -> Dict[str, Any]:
+async def fetch_match_with_timeline_async(match_id: str, token: str, session) -> Dict[str, Any]:
     """
     Asynchronously fetches both match data and timeline data, combining them into a single response.
 
     Args:
         match_id (str): The match ID to fetch data for.
         token (str): The API token for authentication.
-        session (httpx.AsyncClient): The async HTTP client session.
+        session: The async HTTP client session.
 
     Returns:
         Dict: Combined match data with timeline included.
     """
+    import asyncio  # Import here to ensure availability
+
     # Fetch both match and timeline data concurrently
     match_task = fetch_match_data_async(match_id, token, session)
     timeline_task = fetch_timeline_data_async(match_id, token, session)
-    
-    match_data, timeline_data = await asyncio.gather(match_task, timeline_task, return_exceptions=True)
-    
+
+    match_data, timeline_data = await asyncio.gather(
+        match_task, timeline_task, return_exceptions=True
+    )
+
     # Handle exceptions
     if isinstance(match_data, Exception):
         raise match_data
-    
+
     # Timeline data is optional, so we just log if it fails
     if isinstance(timeline_data, Exception):
         logger.warning(f"Failed to fetch timeline data for {match_id}: {timeline_data}")
@@ -718,18 +737,20 @@ async def fetch_match_with_timeline_async(match_id: str, token: str, session: ht
     return match_data
 
 
-async def fetch_match_data_async(match_id: str, token: str, session: httpx.AsyncClient) -> Dict[str, Any]:
+async def fetch_match_data_async(match_id: str, token: str, session) -> Dict[str, Any]:
     """
     Asynchronously fetches match data from the Riot Games API.
 
     Args:
         match_id (str): The match ID to fetch data for.
         token (str): The API token for authentication.
-        session (httpx.AsyncClient): The async HTTP client session.
+        session: The async HTTP client session.
 
     Returns:
         Dict: The match data as a dictionary.
     """
+    import asyncio  # Import here to ensure availability
+
     headers = {"X-Riot-Token": token}
     url = f"{API_BASE_URL}{match_id}"
 
@@ -737,47 +758,50 @@ async def fetch_match_data_async(match_id: str, token: str, session: httpx.Async
     try:
         logger.info(f"Async fetching match data for {match_id}")
         response = await session.get(url, headers=headers)
-        response.raise_for_status()
-        
+        await response.raise_for_status()
+
         latency = time.time() - start_time
         _fetch_metrics.add_request_latency(latency, "match_details")
-        
+
         data = response.json()
         if not isinstance(data, dict):
             raise ValueError("Match data response was not an object")
         return cast(Dict[str, Any], data)
-    except httpx.HTTPStatusError as e:
-        latency = time.time() - start_time
-        _fetch_metrics.add_request_latency(latency, "match_details")
-        if e.response.status_code == 429:
-            _fetch_metrics.add_retry()
-            # Simple backoff for 429 errors
-            retry_after = int(e.response.headers.get("Retry-After", "2"))
-            logger.warning(f"Rate limit hit (429) for {match_id}. Sleeping for {retry_after} seconds...")
-            await asyncio.sleep(retry_after)
-            # Retry once
-            return await fetch_match_data_async(match_id, token, session)
-        logger.error(f"Failed to fetch data for match {match_id}: {e}")
-        raise
     except Exception as e:
         latency = time.time() - start_time
         _fetch_metrics.add_request_latency(latency, "match_details")
+
+        # Check if it's an HTTP status error
+        if hasattr(e, "response") and hasattr(e.response, "status_code"):
+            if e.response.status_code == 429:
+                _fetch_metrics.add_retry()
+                # Simple backoff for 429 errors
+                retry_after = int(e.response.headers.get("Retry-After", "2"))
+                logger.warning(
+                    f"Rate limit hit (429) for {match_id}. Sleeping for {retry_after} seconds..."
+                )
+                await asyncio.sleep(retry_after)
+                # Retry once
+                return await fetch_match_data_async(match_id, token, session)
+
         logger.error(f"Failed to fetch data for match {match_id}: {e}")
         raise
 
 
-async def fetch_timeline_data_async(match_id: str, token: str, session: httpx.AsyncClient) -> Optional[Dict[str, Any]]:
+async def fetch_timeline_data_async(match_id: str, token: str, session) -> Optional[Dict[str, Any]]:
     """
     Asynchronously fetches timeline data for a match from the Riot Games API.
 
     Args:
         match_id (str): The match ID to fetch timeline data for.
         token (str): The API token for authentication.
-        session (httpx.AsyncClient): The async HTTP client session.
+        session: The async HTTP client session.
 
     Returns:
         Optional[Dict]: The timeline data as a dictionary, or None if failed.
     """
+    import asyncio  # Import here to ensure availability
+
     headers = {"X-Riot-Token": token}
     url = TIMELINE_API_URL.format(match_id=match_id)
 
@@ -785,31 +809,32 @@ async def fetch_timeline_data_async(match_id: str, token: str, session: httpx.As
     try:
         logger.info(f"Async fetching timeline data for {match_id}")
         response = await session.get(url, headers=headers)
-        response.raise_for_status()
-        
+        await response.raise_for_status()
+
         latency = time.time() - start_time
         _fetch_metrics.add_request_latency(latency, "timeline")
-        
+
         data = response.json()
         if not isinstance(data, dict):
             return None
         return cast(Dict[str, Any], data)
-    except httpx.HTTPStatusError as e:
-        latency = time.time() - start_time
-        _fetch_metrics.add_request_latency(latency, "timeline")
-        if e.response.status_code == 429:
-            _fetch_metrics.add_retry()
-            # Simple backoff for 429 errors
-            retry_after = int(e.response.headers.get("Retry-After", "2"))
-            logger.warning(f"Rate limit hit (429) for timeline {match_id}. Sleeping for {retry_after} seconds...")
-            await asyncio.sleep(retry_after)
-            # Retry once
-            return await fetch_timeline_data_async(match_id, token, session)
-        logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
-        return None
     except Exception as e:
         latency = time.time() - start_time
         _fetch_metrics.add_request_latency(latency, "timeline")
+
+        # Check if it's an HTTP status error
+        if hasattr(e, "response") and hasattr(e.response, "status_code"):
+            if e.response.status_code == 429:
+                _fetch_metrics.add_retry()
+                # Simple backoff for 429 errors
+                retry_after = int(e.response.headers.get("Retry-After", "2"))
+                logger.warning(
+                    f"Rate limit hit (429) for timeline {match_id}. Sleeping for {retry_after} seconds..."
+                )
+                await asyncio.sleep(retry_after)
+                # Retry once
+                return await fetch_timeline_data_async(match_id, token, session)
+
         logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
         return None
 
@@ -867,7 +892,9 @@ def main():
         try:
             import httpx  # noqa: F401
         except ImportError:
-            logger.warning("httpx not available, falling back to synchronous mode. Install with: pip install httpx")
+            logger.warning(
+                "httpx not available, falling back to synchronous mode. Install with: pip install httpx"
+            )
             async_mode = False
 
     # Fetch PUUID dynamically using Riot ID
@@ -889,25 +916,26 @@ def main():
         )
 
         match_ids = fetch_match_history(puuid, count, token)
-        
+
         if async_mode:
             # Use async processing
             import asyncio
+
             asyncio.run(process_matches_async(match_ids, token, use_cache, args.concurrency))
         else:
             # Use sync processing
             process_matches(match_ids, token, use_cache)
 
         _fetch_metrics.end_timing()
-        
+
         # Print metrics summary if async mode was used or if explicitly requested
         if async_mode or args.metrics_json:
             _fetch_metrics.print_summary()
-        
+
         # Export metrics to JSON if requested
         if args.metrics_json:
             export_metrics_json(args.metrics_json)
-        
+
         logger.info("Process completed successfully")
     except Exception as e:
         _fetch_metrics.end_timing()

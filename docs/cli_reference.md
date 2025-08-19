@@ -83,3 +83,31 @@ If multiple filters are provided, a match must satisfy all of them to be include
 
 ## Logging
 `--debug` overrides `--log-level`. Auto-fetch summary always prints a success line on completion.
+
+## league.py (Data Fetching)
+Direct match data fetching from Riot API. Requires `RIOT_API_TOKEN` environment variable.
+
+Usage: `python stats_visualization/league.py <IGN> <TAG_LINE> <COUNT> [options]`
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--log-level LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | INFO |
+| `--no-cache` | Disable caching and re-fetch all matches | off |
+| `--async-fetch` | Use async/batched fetching for improved performance (requires httpx) | off |
+| `--concurrency N` | Maximum concurrent requests when using async mode | 5 |
+| `--metrics-json FILE` | Export metrics to JSON file | - |
+
+### Async Mode Benefits
+- Significantly faster when fetching multiple matches
+- Utilizes network concurrency with rate limit respect  
+- Provides detailed performance metrics
+- Graceful fallback to sync mode if httpx unavailable
+
+Example:
+```bash
+# Sync mode (default)
+python stats_visualization/league.py Frowtch blue 10
+
+# Async mode with metrics export
+python stats_visualization/league.py Frowtch blue 20 --async-fetch --concurrency 8 --metrics-json metrics.json
+```
