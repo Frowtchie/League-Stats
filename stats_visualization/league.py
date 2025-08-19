@@ -17,6 +17,8 @@ import json
 import logging
 import os
 import sys
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
@@ -25,6 +27,129 @@ from dotenv import load_dotenv
 
 # Load environment variables from config.env if present
 load_dotenv(dotenv_path="config.env")
+
+
+@dataclass
+class FetchMetrics:
+    """Metrics collected during match fetching operations."""
+    
+    # Timing metrics
+    total_requests: int = 0
+    cache_hits: int = 0
+    cache_misses: int = 0
+    retry_count: int = 0
+    
+    # Latency tracking (in seconds)
+    request_latencies: List[float] = field(default_factory=list)
+    
+    # Per-phase breakdown
+    match_ids_requests: int = 0
+    match_details_requests: int = 0
+    timeline_requests: int = 0
+    
+    # Timing for major phases
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
+    
+    def add_request_latency(self, latency: float, request_type: str = "unknown") -> None:
+        """Add a request latency measurement."""
+        self.request_latencies.append(latency)
+        self.total_requests += 1
+        
+        if request_type == "match_ids":
+            self.match_ids_requests += 1
+        elif request_type == "match_details":
+            self.match_details_requests += 1
+        elif request_type == "timeline":
+            self.timeline_requests += 1
+    
+    def add_cache_hit(self) -> None:
+        """Record a cache hit."""
+        self.cache_hits += 1
+    
+    def add_cache_miss(self) -> None:
+        """Record a cache miss."""
+        self.cache_misses += 1
+    
+    def add_retry(self) -> None:
+        """Record a retry attempt."""
+        self.retry_count += 1
+    
+    def start_timing(self) -> None:
+        """Start timing the overall operation."""
+        self.start_time = time.time()
+    
+    def end_timing(self) -> None:
+        """End timing the overall operation."""
+        self.end_time = time.time()
+    
+    @property
+    def total_duration(self) -> Optional[float]:
+        """Get total operation duration in seconds."""
+        if self.start_time and self.end_time:
+            return self.end_time - self.start_time
+        return None
+    
+    @property
+    def avg_latency(self) -> float:
+        """Get average request latency in seconds."""
+        if not self.request_latencies:
+            return 0.0
+        return sum(self.request_latencies) / len(self.request_latencies)
+    
+    @property
+    def p95_latency(self) -> float:
+        """Get 95th percentile latency in seconds."""
+        if not self.request_latencies:
+            return 0.0
+        sorted_latencies = sorted(self.request_latencies)
+        index = int(len(sorted_latencies) * 0.95)
+        return sorted_latencies[min(index, len(sorted_latencies) - 1)]
+    
+    @property
+    def max_latency(self) -> float:
+        """Get maximum latency in seconds."""
+        if not self.request_latencies:
+            return 0.0
+        return max(self.request_latencies)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metrics to dictionary for JSON export."""
+        return {
+            "total_requests": self.total_requests,
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "retry_count": self.retry_count,
+            "avg_latency_ms": self.avg_latency * 1000,
+            "p95_latency_ms": self.p95_latency * 1000,
+            "max_latency_ms": self.max_latency * 1000,
+            "total_duration_seconds": self.total_duration,
+            "phase_breakdown": {
+                "match_ids_requests": self.match_ids_requests,
+                "match_details_requests": self.match_details_requests,
+                "timeline_requests": self.timeline_requests,
+            }
+        }
+    
+    def print_summary(self) -> None:
+        """Print a summary of metrics to console."""
+        print("=== Fetch Metrics Summary ===")
+        print(f"Total requests: {self.total_requests}")
+        print(f"Cache hits: {self.cache_hits}, Cache misses: {self.cache_misses}")
+        if self.total_requests > 0:
+            cache_ratio = self.cache_hits / (self.cache_hits + self.cache_misses) * 100 if (self.cache_hits + self.cache_misses) > 0 else 0
+            print(f"Cache hit ratio: {cache_ratio:.1f}%")
+        print(f"Retry count: {self.retry_count}")
+        if self.request_latencies:
+            print(f"Latency - Avg: {self.avg_latency*1000:.1f}ms, P95: {self.p95_latency*1000:.1f}ms, Max: {self.max_latency*1000:.1f}ms")
+        if self.total_duration:
+            print(f"Total duration: {self.total_duration:.2f}s")
+        print(f"Phase breakdown - IDs: {self.match_ids_requests}, Details: {self.match_details_requests}, Timelines: {self.timeline_requests}")
+        print("=============================")
+
+
+# Global metrics instance
+_fetch_metrics = FetchMetrics()
 
 
 def ensure_matches_for_player(
@@ -92,14 +217,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30):
+def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30, request_type: str = "unknown"):
     """
-    Make a request to the API with proper error handling.
+    Make a request to the API with proper error handling and metrics collection.
 
     Args:
         url (str): The URL to request
         headers (Dict[str, str]): Request headers
         timeout (int): Request timeout in seconds
+        request_type (str): Type of request for metrics tracking
 
     Returns:
         requests.Response: The response object
@@ -107,9 +233,23 @@ def make_api_request(url: str, headers: Dict[str, str], timeout: int = 30):
     Raises:
         requests.RequestException: If the request fails
     """
-    response = requests.get(url, headers=headers, timeout=timeout)
-    response.raise_for_status()
-    return response
+    start_time = time.time()
+    try:
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, request_type)
+        return response
+    except requests.exceptions.HTTPError as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, request_type)
+        if e.response is not None and e.response.status_code == 429:
+            _fetch_metrics.add_retry()
+        raise
+    except Exception as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, request_type)
+        raise
 
 
 def validate_match_data(data: Dict[str, Any]) -> bool:
@@ -187,7 +327,7 @@ def fetch_puuid_by_riot_id(game_name: str, tag_line: str, token: str) -> str:
 
     try:
         logger.info(f"Fetching PUUID for {game_name}#{tag_line}")
-        response = make_api_request(url, headers)
+        response = make_api_request(url, headers, timeout=30, request_type="puuid")
         data = response.json()
 
         if not isinstance(data, dict) or "puuid" not in data:
@@ -231,8 +371,7 @@ def fetch_match_data(match_id: str, token: str) -> Dict[str, Any]:
 
     try:
         logger.info(f"Fetching match data for {match_id}")
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
+        response = make_api_request(url, headers, timeout=30, request_type="match_details")
         data = response.json()
         if not isinstance(data, dict):
             raise ValueError("Match data response was not an object")
@@ -261,8 +400,7 @@ def fetch_timeline_data(match_id: str, token: str) -> Optional[Dict[str, Any]]:
 
     try:
         logger.info(f"Fetching timeline data for {match_id}")
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
+        response = make_api_request(url, headers, timeout=30, request_type="timeline")
         data = response.json()
         if not isinstance(data, dict):
             return None
@@ -334,6 +472,7 @@ def load_cached_match_data(match_id: str) -> Optional[Dict[str, Any]]:
     file_path = Path(MATCHES_DIR) / f"{match_id}.json"
 
     if not file_path.exists():
+        _fetch_metrics.add_cache_miss()
         return None
 
     try:
@@ -344,13 +483,16 @@ def load_cached_match_data(match_id: str) -> Optional[Dict[str, Any]]:
         # Validate cached data
         if validate_match_data(data):
             logger.debug(f"Loaded cached match data for {match_id}")
+            _fetch_metrics.add_cache_hit()
             return data
         else:
             logger.warning(f"Cached data for {match_id} is invalid, will re-fetch")
+            _fetch_metrics.add_cache_miss()
             return None
 
     except (IOError, json.JSONDecodeError) as e:
         logger.warning(f"Failed to load cached data for {match_id}: {e}")
+        _fetch_metrics.add_cache_miss()
         return None
 
 
@@ -426,7 +568,7 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
         batch_count = min(max_per_request, remaining)
         url = f"{MATCH_HISTORY_URL}{puuid}/ids?start={start}&count={batch_count}"
         try:
-            response = make_api_request(url, headers)
+            response = make_api_request(url, headers, timeout=30, request_type="match_ids")
             raw_ids_any = response.json()
             if not isinstance(raw_ids_any, list):
                 raise ValueError("Match history response was not a list")
@@ -444,8 +586,6 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
             if e.response is not None and e.response.status_code == 429:
                 retry_after = int(e.response.headers.get("Retry-After", "2"))
                 logger.warning(f"Rate limit hit (429). Sleeping for {retry_after} seconds...")
-                import time
-
                 time.sleep(retry_after)
                 continue
             else:
@@ -460,6 +600,218 @@ def fetch_match_history(puuid: str, count: int, token: str) -> List[str]:
 
     logger.info(f"Total match IDs fetched: {len(all_match_ids)}")
     return all_match_ids
+
+
+def export_metrics_json(filepath: str) -> None:
+    """
+    Export metrics to a JSON file.
+    
+    Args:
+        filepath (str): Path to the JSON file to export metrics to
+    """
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(_fetch_metrics.to_dict(), f, indent=2)
+        logger.info(f"Metrics exported to {filepath}")
+    except IOError as e:
+        logger.error(f"Failed to export metrics to {filepath}: {e}")
+
+
+async def process_matches_async(match_ids: List[str], token: str, use_cache: bool = True, concurrency: int = 5) -> None:
+    """
+    Processes a list of match IDs asynchronously with concurrency control.
+
+    Args:
+        match_ids (List[str]): A list of match IDs to process.
+        token (str): The API token for authentication.
+        use_cache (bool): Whether to use cached data if available.
+        concurrency (int): Maximum number of concurrent requests.
+    """
+    try:
+        import httpx
+        import asyncio
+    except ImportError:
+        logger.error("httpx not available for async processing")
+        raise
+
+    total_matches = len(match_ids)
+    successful = 0
+    failed = 0
+    cached = 0
+
+    # Create semaphore for concurrency control
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def process_single_match(match_id: str, session: httpx.AsyncClient) -> bool:
+        """Process a single match with concurrency control."""
+        nonlocal successful, failed, cached
+        
+        async with semaphore:
+            try:
+                logger.info(f"Processing match: {match_id}")
+
+                # Try to load from cache first
+                data = None
+                if use_cache:
+                    data = load_cached_match_data(match_id)
+                    if data:
+                        cached += 1
+                        logger.info(f"Using cached data for {match_id}")
+
+                # Fetch from API if not cached or cache disabled
+                if data is None:
+                    data = await fetch_match_with_timeline_async(match_id, token, session)
+                    save_match_data(match_id, data)
+
+                successful += 1
+                return True
+            except Exception as e:
+                logger.error(f"Error processing match {match_id}: {e}")
+                failed += 1
+                return False
+
+    # Create async HTTP client
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Process all matches concurrently
+        tasks = [process_single_match(match_id, client) for match_id in match_ids]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    logger.info(
+        f"Async processing complete. Successful: {successful}, Failed: {failed}, Cached: {cached}"
+    )
+
+
+async def fetch_match_with_timeline_async(match_id: str, token: str, session: httpx.AsyncClient) -> Dict[str, Any]:
+    """
+    Asynchronously fetches both match data and timeline data, combining them into a single response.
+
+    Args:
+        match_id (str): The match ID to fetch data for.
+        token (str): The API token for authentication.
+        session (httpx.AsyncClient): The async HTTP client session.
+
+    Returns:
+        Dict: Combined match data with timeline included.
+    """
+    # Fetch both match and timeline data concurrently
+    match_task = fetch_match_data_async(match_id, token, session)
+    timeline_task = fetch_timeline_data_async(match_id, token, session)
+    
+    match_data, timeline_data = await asyncio.gather(match_task, timeline_task, return_exceptions=True)
+    
+    # Handle exceptions
+    if isinstance(match_data, Exception):
+        raise match_data
+    
+    # Timeline data is optional, so we just log if it fails
+    if isinstance(timeline_data, Exception):
+        logger.warning(f"Failed to fetch timeline data for {match_id}: {timeline_data}")
+        timeline_data = None
+
+    # Combine the data
+    if timeline_data:
+        match_data["timeline"] = timeline_data
+        logger.info(f"Successfully combined match and timeline data for {match_id}")
+    else:
+        logger.info(f"Timeline data not available for {match_id}, proceeding with match data only")
+
+    return match_data
+
+
+async def fetch_match_data_async(match_id: str, token: str, session: httpx.AsyncClient) -> Dict[str, Any]:
+    """
+    Asynchronously fetches match data from the Riot Games API.
+
+    Args:
+        match_id (str): The match ID to fetch data for.
+        token (str): The API token for authentication.
+        session (httpx.AsyncClient): The async HTTP client session.
+
+    Returns:
+        Dict: The match data as a dictionary.
+    """
+    headers = {"X-Riot-Token": token}
+    url = f"{API_BASE_URL}{match_id}"
+
+    start_time = time.time()
+    try:
+        logger.info(f"Async fetching match data for {match_id}")
+        response = await session.get(url, headers=headers)
+        response.raise_for_status()
+        
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "match_details")
+        
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("Match data response was not an object")
+        return cast(Dict[str, Any], data)
+    except httpx.HTTPStatusError as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "match_details")
+        if e.response.status_code == 429:
+            _fetch_metrics.add_retry()
+            # Simple backoff for 429 errors
+            retry_after = int(e.response.headers.get("Retry-After", "2"))
+            logger.warning(f"Rate limit hit (429) for {match_id}. Sleeping for {retry_after} seconds...")
+            await asyncio.sleep(retry_after)
+            # Retry once
+            return await fetch_match_data_async(match_id, token, session)
+        logger.error(f"Failed to fetch data for match {match_id}: {e}")
+        raise
+    except Exception as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "match_details")
+        logger.error(f"Failed to fetch data for match {match_id}: {e}")
+        raise
+
+
+async def fetch_timeline_data_async(match_id: str, token: str, session: httpx.AsyncClient) -> Optional[Dict[str, Any]]:
+    """
+    Asynchronously fetches timeline data for a match from the Riot Games API.
+
+    Args:
+        match_id (str): The match ID to fetch timeline data for.
+        token (str): The API token for authentication.
+        session (httpx.AsyncClient): The async HTTP client session.
+
+    Returns:
+        Optional[Dict]: The timeline data as a dictionary, or None if failed.
+    """
+    headers = {"X-Riot-Token": token}
+    url = TIMELINE_API_URL.format(match_id=match_id)
+
+    start_time = time.time()
+    try:
+        logger.info(f"Async fetching timeline data for {match_id}")
+        response = await session.get(url, headers=headers)
+        response.raise_for_status()
+        
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "timeline")
+        
+        data = response.json()
+        if not isinstance(data, dict):
+            return None
+        return cast(Dict[str, Any], data)
+    except httpx.HTTPStatusError as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "timeline")
+        if e.response.status_code == 429:
+            _fetch_metrics.add_retry()
+            # Simple backoff for 429 errors
+            retry_after = int(e.response.headers.get("Retry-After", "2"))
+            logger.warning(f"Rate limit hit (429) for timeline {match_id}. Sleeping for {retry_after} seconds...")
+            await asyncio.sleep(retry_after)
+            # Retry once
+            return await fetch_timeline_data_async(match_id, token, session)
+        logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
+        return None
+    except Exception as e:
+        latency = time.time() - start_time
+        _fetch_metrics.add_request_latency(latency, "timeline")
+        logger.warning(f"Failed to fetch timeline data for match {match_id}: {e}")
+        return None
 
 
 def main():
@@ -482,6 +834,22 @@ def main():
         action="store_true",
         help="Disable caching and re-fetch all matches",
     )
+    parser.add_argument(
+        "--async-fetch",
+        action="store_true",
+        help="Use async/batched fetching for improved performance (requires httpx)",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=5,
+        help="Maximum concurrent requests when using async mode (default: 5)",
+    )
+    parser.add_argument(
+        "--metrics-json",
+        type=str,
+        help="Export metrics to JSON file",
+    )
     args = parser.parse_args()
 
     # Set logging level
@@ -493,23 +861,56 @@ def main():
         logger.error("RIOT_API_TOKEN environment variable is not set.")
         raise EnvironmentError("RIOT_API_TOKEN environment variable is not set.")
 
+    # Check async mode availability
+    async_mode = args.async_fetch
+    if async_mode:
+        try:
+            import httpx  # noqa: F401
+        except ImportError:
+            logger.warning("httpx not available, falling back to synchronous mode. Install with: pip install httpx")
+            async_mode = False
+
     # Fetch PUUID dynamically using Riot ID
     game_name = args.game_name
     tag_line = args.tag_line
     count = args.count
     use_cache = not args.no_cache
 
+    # Initialize metrics timing
+    _fetch_metrics.start_timing()
+
     try:
         puuid = fetch_puuid_by_riot_id(game_name, tag_line, token)
         logger.info(
             f"Starting fetch for player {game_name}#{tag_line} - {count} matches "
-            f"(cache: {'enabled' if use_cache else 'disabled'})"
+            f"(cache: {'enabled' if use_cache else 'disabled'}, "
+            f"mode: {'async' if async_mode else 'sync'}"
+            f"{f', concurrency: {args.concurrency}' if async_mode else ''})"
         )
 
         match_ids = fetch_match_history(puuid, count, token)
-        process_matches(match_ids, token, use_cache)
+        
+        if async_mode:
+            # Use async processing
+            import asyncio
+            asyncio.run(process_matches_async(match_ids, token, use_cache, args.concurrency))
+        else:
+            # Use sync processing
+            process_matches(match_ids, token, use_cache)
+
+        _fetch_metrics.end_timing()
+        
+        # Print metrics summary if async mode was used or if explicitly requested
+        if async_mode or args.metrics_json:
+            _fetch_metrics.print_summary()
+        
+        # Export metrics to JSON if requested
+        if args.metrics_json:
+            export_metrics_json(args.metrics_json)
+        
         logger.info("Process completed successfully")
     except Exception as e:
+        _fetch_metrics.end_timing()
         logger.error(f"Process failed: {e}")
         raise
 
