@@ -5,6 +5,9 @@ matplotlib>=3.5.0
 # For environment variable loading
 python-dotenv>=1.0.0
 
+# Optional async HTTP client for improved performance
+httpx>=0.25.0
+
 # Development dependencies
 pytest>=7.0.0
 pytest-cov>=4.0.0
