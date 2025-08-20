@@ -30,6 +30,15 @@ except Exception:  # noqa: BLE001 - broad fallback acceptable here
 
 OUTPUT_DIR = Path("output")
 
+# Mapping of user-friendly labels to Queue IDs
+QUEUE_ID_MAP = {
+    "Solo/Duo": [420],
+    "Flex": [440],
+    "Normal": [400, 430],
+    "ARAM": [450],
+    "URF": [900],
+}
+
 
 def _list_pngs() -> list[Path]:
     OUTPUT_DIR.mkdir(exist_ok=True)
@@ -41,7 +50,6 @@ def _generate_all(
     tag: str,
     token: str,
     *,
-    include_aram: bool,
     queue_filter: Optional[Iterable[int]],
     game_mode_whitelist: Optional[Iterable[str]],
     clean: bool,
@@ -69,7 +77,6 @@ def _generate_all(
         analyze.generate_all_visuals(
             f"{ign}#{tag}",
             puuid,
-            include_aram=include_aram,
             queue_filter=list(queue_filter) if queue_filter is not None else None,
             game_mode_whitelist=(
                 list(game_mode_whitelist) if game_mode_whitelist is not None else None
@@ -116,21 +123,11 @@ def main():  # noqa: C901 (complexity acceptable for UI glue)
         st.header("Player")
         ign = st.text_input("IGN", value="Frowtch")
         tag = st.text_input("Tag Line", value="blue")
-        st.header("Filters")
-        ranked_only = st.checkbox("Ranked Only (Solo/Flex)", value=True, help="Queues 420 & 440")
-        include_aram = st.checkbox("Include ARAM", value=False)
-        queue_ids_raw = st.text_input(
-            "Queue IDs (space separated)",
-            value="" if ranked_only else "",
-            help=(
-                "Overrides 'Ranked Only' when provided. Common queues: "
-                "420=Ranked Solo, 440=Ranked Flex, 400=Draft Pick, 430=Blind Pick, "
-                "450=ARAM, 490=Quickplay, 700=Clash, 900=URF, 920=Poro King, 1020=One For All, "
-                "830/840/850=Intro/Beginner/Intermediate Bots."
-            ),
-        )
-        modes_raw = st.text_input(
-            "Game Modes (space separated)", value="", help="e.g. CLASSIC CHERRY"
+        # Dropdown menu for queue selection
+        queue_label = st.selectbox(
+            "Select Game Mode",
+            options=list(QUEUE_ID_MAP.keys()),
+            help="Choose a game mode to filter matches."
         )
         st.header("Generation")
         clean = st.checkbox("Clean output/ before build", value=True)
@@ -145,14 +142,9 @@ def main():  # noqa: C901 (complexity acceptable for UI glue)
 
     # Derived filters
     queue_filter: Optional[List[int]] = None
-    if ranked_only:
-        queue_filter = [420, 440]
-    if queue_ids_raw.strip():  # explicit queue IDs override ranked shortcut
-        try:
-            queue_filter = [int(q) for q in queue_ids_raw.split()] if queue_ids_raw else None
-        except ValueError:
-            st.warning("Invalid queue IDs ignored (must be integers).")
-    mode_whitelist = modes_raw.split() if modes_raw.strip() else None
+    # Get the corresponding Queue IDs from the selected label
+    queue_filter = QUEUE_ID_MAP.get(queue_label, None)
+    mode_whitelist = None
 
     # Auto show current match count if player resolvable
     puuid = None
@@ -173,7 +165,6 @@ def main():  # noqa: C901 (complexity acceptable for UI glue)
                 ign,
                 tag,
                 token,
-                include_aram=include_aram,
                 queue_filter=queue_filter,
                 game_mode_whitelist=mode_whitelist,
                 clean=clean,
