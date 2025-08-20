@@ -729,12 +729,16 @@ async def fetch_match_with_timeline_async(match_id: str, token: str, session) ->
 
     # Combine the data
     if timeline_data:
+        # Ensure correct typing for match_data before mutation
+        assert isinstance(match_data, dict), "Expected dict from fetch_match_data_async"
+        match_data = cast(Dict[str, Any], match_data)
         match_data["timeline"] = timeline_data
         logger.info(f"Successfully combined match and timeline data for {match_id}")
     else:
         logger.info(f"Timeline data not available for {match_id}, proceeding with match data only")
 
-    return match_data
+    # Ensure mypy understands the return type
+    return cast(Dict[str, Any], match_data)
 
 
 async def fetch_match_data_async(match_id: str, token: str, session) -> Dict[str, Any]:
