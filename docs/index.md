@@ -21,7 +21,7 @@ See the sections in the left navigation for deeper details.
 
 ## Project vs. Live Data
 
-This site is static (built by MkDocs) and does **not** call the Riot API. All dynamic analysis still happens locally via the CLI (and forthcoming GUI). To publish example charts on the site you can:
+This site is static (built by MkDocs) and does **not** call the Riot API. All dynamic analysis still happens locally via the CLI and the GUI. To publish example charts on the site you can:
 
 1. Generate PNGs locally in the `output/` directory
 2. Commit selected images under `docs/examples/` (create if needed)

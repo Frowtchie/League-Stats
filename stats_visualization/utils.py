@@ -1,8 +1,10 @@
-"""Utility helpers for visualization modules."""
+"""Utility helpers for visualization modules and shared logging."""
 
 from __future__ import annotations
 
 from pathlib import Path
+import logging
+import os
 from typing import Optional
 from matplotlib.figure import Figure
 from typing import Iterable, Sequence, Any
@@ -43,7 +45,8 @@ def filter_matches(
         matches: Raw loaded match objects.
         include_aram: If False, drop ARAM (gameMode == 'ARAM').
         allowed_queue_ids: If provided, keep only matches whose info.queueId is in set.
-        allowed_game_modes: Additional whitelist of gameMode values (case-sensitive as provided by API).
+        allowed_game_modes: Additional whitelist of gameMode values
+            (case-sensitive as provided by API).
 
     Notes:
         - Silently skips matches missing 'info'.
@@ -69,7 +72,8 @@ def filter_matches(
             continue
         if gm_set is not None and game_mode not in gm_set:
             print(
-                f"[DEBUG][filter_matches] Skipping match: gameMode {game_mode} not in allowed set {gm_set}: {info}"
+                f"[DEBUG][filter_matches] Skipping match: gameMode {game_mode} "
+                f"not in allowed set {gm_set}: {info}"
             )
             continue
         print(f"[DEBUG][filter_matches] Keeping match: {info}")
@@ -112,3 +116,36 @@ def save_figure(
 def sanitize_player(name: str) -> str:
     """Sanitize a Riot player display name for filesystem use."""
     return name.replace("#", "_")
+
+
+def setup_file_logging(
+    log_path: str = "logs/league_stats.log", *, level: int = logging.INFO
+) -> None:
+    """Attach a FileHandler to the root logger for persistent logs.
+
+    Safe to call multiple times; avoids duplicate handlers for the same file.
+    """
+    Path(os.path.dirname(log_path) or ".").mkdir(parents=True, exist_ok=True)
+    root = logging.getLogger()
+    # Ensure root logger permits messages at desired level (e.g., INFO).
+    # Streamlit often leaves the root at WARNING; drop it to `level`
+    # if the current level is higher than the desired level.
+    try:
+        current_level = root.level
+        if current_level == logging.NOTSET or current_level > level:
+            root.setLevel(level)
+    except Exception:
+        # Best-effort; proceed even if we cannot adjust the level.
+        pass
+    norm_target = os.path.abspath(log_path)
+    for h in root.handlers:
+        if isinstance(h, logging.FileHandler):
+            try:
+                if os.path.abspath(getattr(h, "baseFilename", "")) == norm_target:
+                    return
+            except Exception:
+                continue
+    fh = logging.FileHandler(norm_target, encoding="utf-8")
+    fh.setLevel(level)
+    fh.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    root.addHandler(fh)

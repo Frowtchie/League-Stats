@@ -63,7 +63,8 @@ def extract_objective_data(
         if "info" not in match or "participants" not in match["info"]:
             continue
 
-        # Exclude ARAM matches by default since they lack SR objectives like Baron/Herald/standard Dragons.
+        # Exclude ARAM matches by default since they lack SR objectives like
+        # Baron/Herald/standard Dragons.
         # filtering already applied
 
         # Find player's team ID

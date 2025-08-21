@@ -357,7 +357,7 @@ def main() -> None:
 
     matches_dir = args.matches_dir
     num_matches = league.ensure_matches_for_player(
-        player_puuid, token, matches_dir, min_matches=1, fetch_count=10
+        player_puuid, token, matches_dir=matches_dir, min_matches=1, fetch_count=10
     )
     if num_matches == 0:
         print(f"Failed to fetch or find any matches for {player_display}.")

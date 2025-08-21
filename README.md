@@ -38,6 +38,7 @@ See the [Changelog](docs/changelog.md) for release notes (new, unreleased change
 
 - Python 3.8 or higher
 - A valid API key from [Riot Developer Portal](https://developer.riotgames.com/)
+ - Optional: `httpx` to enable async fetching (CLI defaults to async when `httpx` is installed; otherwise it automatically falls back to sync)
 
 ## Installation
 
@@ -58,8 +59,8 @@ The setup script will:
 - Create configuration files
 - Set up necessary directories
 - Run tests to verify installation
-
-### Manual Setup
+# No cache, include timeline, and print metrics summary
+python -m stats_visualization.league frowtch blue 5 --no-cache --include-timeline --show-metrics
 
 1. Clone the repository:
 ```bash
@@ -116,7 +117,8 @@ python -m stats_visualization.league "Hide on bush" KR1 15
 python -m stats_visualization.league frowtch blue 5 --log-level DEBUG --no-cache
 ```
 
-**Note**: The script now uses Riot ID (IGN + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance.
+**Note**: The script now uses Riot ID (IGN + tag line) instead of predefined player names. This allows fetching data for any player without needing to configure PUUIDs in advance. The CLI fetcher runs in async mode by default (faster), with an optional `--sync` flag to force synchronous fetching.
+Async mode requires the `httpx` package. If `httpx` isn’t installed, the CLI prints a notice and transparently falls back to the synchronous path.
 
 ### Generate Personal Performance & Other Visualizations
 
@@ -179,6 +181,13 @@ Features:
 - One-click bulk chart generation (reuses `analyze.generate_all_visuals`)
 - Responsive gallery of generated PNGs from `output/`
 
+Logging:
+- The GUI writes key steps to `logs/league_stats.log` (via centralized logging). Look for lines like:
+    - `GUI: Resolving PUUID ...`
+    - `GUI: Ensuring matches ...`
+    - `GUI: Generating all visuals ...`
+    - `GUI: Generation complete in ...s`
+
 Planned improvements (feedback welcome):
 - Partial / per-chart regeneration
 - Progress callbacks per visualization instead of single batch
@@ -232,7 +241,7 @@ python analyze.py -i Frowtch blue -m custom_matches/ -q 420
 
 **Note**: With the new Riot ID-based player lookup, you no longer need to configure individual player PUUIDs. The script will automatically fetch PUUIDs using the Riot API when you provide an IGN and tag line.
 
-**No need to source config.env manually:** All scripts automatically load environment variables from `config.env`.
+**No need to source config.env manually:** All scripts (including `league` and visualization scripts) automatically load environment variables from `config.env`.
 
 ### Regional Endpoints
 

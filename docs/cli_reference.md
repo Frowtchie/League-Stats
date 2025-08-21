@@ -84,6 +84,8 @@ If multiple filters are provided, a match must satisfy all of them to be include
 ## Logging
 `--debug` overrides `--log-level`. Auto-fetch summary always prints a success line on completion.
 
+All entrypoints write to `logs/league_stats.log` (initialized via `utils.setup_file_logging()`). The Streamlit GUI also emits INFO logs for PUUID resolution, ensuring matches, generation start, and completion or errors.
+
 ## league.py (Data Fetching)
 Direct match data fetching from Riot API. Requires `RIOT_API_TOKEN` environment variable.
 
@@ -93,24 +95,25 @@ Usage: `python stats_visualization/league.py <IGN> <TAG_LINE> <COUNT> [options]`
 |--------|-------------|---------|
 | `--log-level LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | INFO |
 | `--no-cache` | Disable caching and re-fetch all matches | off |
-| `--sync-mode` | Use synchronous mode instead of default async/batched fetching | off |
-| `--concurrency N` | Maximum concurrent requests when using async mode | 8 |
-| `--metrics-json FILE` | Export metrics to JSON file | - |
+| `--sync` | Force synchronous mode (default is async) | off |
+| `--include-timeline` | Also fetch timeline data (slower, may 404 on some) | off |
+| `--show-metrics` | Print metrics summary to stdout | off |
 
 ### Default Async Mode Benefits
 - Significantly faster when fetching multiple matches (default behavior)
 - Utilizes network concurrency with rate limit respect  
 - Provides detailed performance metrics
 - Graceful fallback to sync mode if httpx unavailable
+ 
+Note: Async mode requires the `httpx` package. If it’s not installed, the CLI will automatically fall back to synchronous mode and print a short notice. Install `httpx` to restore async behavior.
 
-Example:
+Examples:
 ```bash
-# Async mode with default concurrency (default behavior)
-python stats_visualization/league.py Frowtch blue 10
+python stats_visualization/league.py Frowtch blue 10  # async default
 
-# Async mode with custom concurrency and metrics export
-python stats_visualization/league.py Frowtch blue 20 --concurrency 12 --metrics-json metrics.json
+# Include timeline and print metrics
+python stats_visualization/league.py Frowtch blue 20 --include-timeline --show-metrics
 
 # Force sync mode for compatibility
-python stats_visualization/league.py Frowtch blue 10 --sync-mode
+python stats_visualization/league.py Frowtch blue 10 --sync
 ```

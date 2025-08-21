@@ -35,3 +35,6 @@ Ensure a minimum number of recent matches locally for analysis without manual in
 - Parallel fetch with rate limit pacing.
 - Incremental update (only newest N matches).
 - Cache metadata index for faster player match counting.
+
+## CLI Execution Mode
+The `stats_visualization/league.py` script fetches asynchronously by default for speed. Async mode requires `httpx`; if `httpx` is not installed, the CLI prints a notice and automatically falls back to synchronous fetching. Use `--sync` to force the legacy synchronous path explicitly. Timelines are optional via `--include-timeline`.

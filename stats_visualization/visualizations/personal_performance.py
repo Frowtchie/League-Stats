@@ -472,7 +472,10 @@ def main():
         "--modes",
         type=str,
         nargs="+",
-        help="Whitelist of gameMode values (e.g. CLASSIC URF). Applied in addition to other filters.",
+        help=(
+            "Whitelist of gameMode values (e.g. CLASSIC URF). Applied in addition to other "
+            "filters."
+        ),
     )
     parser.add_argument(
         "-O",

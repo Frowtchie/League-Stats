@@ -1,13 +1,17 @@
 
 # Changelog
 ## Unreleased
+- (placeholder)
+
+## 2.0.0 - 2025-08-21
 - **BREAKING**: Async/batched Riot API fetch is now the **default mode** for `league.py`. Sync mode is available via `--sync-mode` flag. Default concurrency increased from 5 to 8 for improved performance.
 - **NEW**: Async/batched Riot API fetch with lightweight cache metrics (`--concurrency N`, `--metrics-json FILE` flags for `league.py`). Provides significant performance improvement via controlled parallelism while respecting rate limits. Includes graceful fallback to sync mode if httpx unavailable.
 - **ENHANCED**: Comprehensive metrics collection for all fetch operations (sync/async) with latency tracking (avg/p95/max), cache hit/miss ratios, retry counts, and per-phase breakdown (match IDs, details, timelines).
 - Added [glossary](glossary.md) with definitions for IGN, Riot ID, PUUID, Queue ID, Game Mode, Role, Timeline, Objective.
-- Updated [architecture diagram](architecture.svg) to include filtering logic and async branch placeholder.
+- Updated [architecture diagram](architecture.svg) to reflect async-first fetching, GUI entry point, and config/logging.
 - Cross-linked glossary terms in README and CLI reference for onboarding clarity.
- - New visualization: lane phase lane metrics timeline (`lane_cs_diff.py`) with CS/XP/Gold @10/@15 diffs vs inferred opponent (positive = ahead for each); integrated into bulk generation. (Updated) XP/Gold now rendered in a separate figure (`lane_resource_diffs_<player>.png`) to reduce clutter.
+- New visualization: lane phase lane metrics timeline (`lane_cs_diff.py`) with CS/XP/Gold @10/@15 diffs vs inferred opponent (positive = ahead for each); integrated into bulk generation. (Updated) XP/Gold now rendered in a separate figure (`lane_resource_diffs_<player>.png`) to reduce clutter.
+- GUI logging: Streamlit GUI now writes key actions to `logs/league_stats.log` by default (resolve PUUID, ensure matches, build visuals, completion). Logging is standardized across CLI/Analyze/GUI via `utils.setup_file_logging()`.
 
 ## 1.0.0 - 2025-08-17
 - First stable release. Introduces Streamlit GUI prototype (`stats_visualization/gui_app.py`) for interactive chart generation, filtering (ranked only, ARAM inclusion, queue & mode filters), and modal image gallery with download.

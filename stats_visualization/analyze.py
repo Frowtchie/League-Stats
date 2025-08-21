@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Iterable, Optional
 from collections import Counter
 import logging
+from stats_visualization.utils import setup_file_logging
 
 # Ensure project root on path early before local imports
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -395,9 +396,10 @@ def main():
     )
     args = parser.parse_args()
 
-    # Set up logging
+    # Set up logging (console) and add file handler to logs/league_stats.log
     level = logging.DEBUG if args.debug else getattr(logging, args.log_level)
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+    setup_file_logging()
     logger.debug("Entered main() with args: %s", args)
 
     # Load matches (unfiltered first for potential auto-fetch logic)
@@ -464,9 +466,11 @@ def main():
                 last_error = e
                 continue
         if player_puuid is None:
-            print(
-                f"Failed to fetch PUUID for {original_label} (case-insensitive attempts exhausted): {last_error}"
+            msg = (
+                f"Failed to fetch PUUID for {original_label} "
+                f"(case-insensitive attempts exhausted): {last_error}"
             )
+            print(msg)
             return
         player_label = original_label
     elif args.player:
@@ -528,16 +532,19 @@ def main():
                         new_total_files = len(matches)
                         delta_player = new_player_matches - prev_player_matches
                         delta_files = new_total_files - prev_total_files
-                        print(
-                            f"\n✅ Fetch complete in {duration:.1f}s: player matches {prev_player_matches} -> "
-                            f"{new_player_matches} (+{delta_player}); files {prev_total_files} -> "
-                            f"{new_total_files} (+{delta_files})."
+                        fetch_msg = (
+                            f"\n✅ Fetch complete in {duration:.1f}s: player matches "
+                            f"{prev_player_matches} -> {new_player_matches} (+{delta_player}); "
+                            f"files {prev_total_files} -> {new_total_files} (+{delta_files})."
                         )
+                        print(fetch_msg)
                         if new_player_matches < args.min_matches:
-                            print(
-                                f"⚠️ Still below desired minimum ({new_player_matches} < {args.min_matches}). "
-                                f"Consider increasing --fetch-count and re-running."
+                            warn_msg = (
+                                "⚠️ Still below desired minimum "
+                                f"({new_player_matches} < {args.min_matches}). "
+                                "Consider increasing --fetch-count and re-running."
                             )
+                            print(warn_msg)
                         elif delta_player == 0:
                             print("ℹ️ No new matches involving this player were added.")
                     except Exception as e:
