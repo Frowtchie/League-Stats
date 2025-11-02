@@ -15,6 +15,7 @@ This module keeps business logic in existing core modules (league, analyze) and 
 from __future__ import annotations
 
 import os
+import sys
 import time
 import base64
 from pathlib import Path
@@ -23,19 +24,33 @@ from typing import Iterable, Optional, List
 
 import streamlit as st
 
+# Add project root to Python path for Streamlit Cloud compatibility
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 # Support both execution from project root (absolute import) and from inside the package directory
 try:  # pragma: no cover - import robustness
     from . import analyze, league
-except Exception:  # noqa: BLE001 - broad fallback acceptable here
-    from stats_visualization import analyze, league
+except (ImportError, ValueError):  # ValueError for relative import in non-package
+    try:
+        from stats_visualization import analyze, league
+    except ImportError:
+        # Direct import as fallback for Streamlit Cloud
+        import analyze
+        import league
 
 # Shared logging: write GUI actions into logs/league_stats.log
 try:  # pragma: no cover - safe in Streamlit reloads
     from stats_visualization.utils import setup_file_logging
-
     setup_file_logging()
-except Exception:
-    pass
+except ImportError:
+    try:
+        from utils import setup_file_logging
+        setup_file_logging()
+    except ImportError:
+        # Fallback: basic logging setup
+        logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
